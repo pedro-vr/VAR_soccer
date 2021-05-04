@@ -1,0 +1,21 @@
+---
+title: "VAR in football"
+author: "Pedro Alan Velázquez Romero"
+date: "5/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Esta es la primera versión del documento en donde se harán los cálculos para el análisis del VAR en el fútbol. A partir de aquí se va a empezar con un análisis descriptivo de los datos, además de reconocer los datos verdaderamente valiosos con los que se trabajará.
+
+
+```{r cars}
+#football_matches <- read.csv("/Users/pedrovela/Documentos/Tesis/club_soccer_predictions/spi_matches.csv")
+football_matches <- read.csv("https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv")
+head(football_matches,5)
+```
+
+
