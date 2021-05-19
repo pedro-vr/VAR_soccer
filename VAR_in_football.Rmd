@@ -9,13 +9,59 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, include = FALSE}
+#librerias a utilizar 
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML"))
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(httr)
+library(XML)
+```
+
 Esta es la primera versión del documento en donde se harán los cálculos para el análisis del VAR en el fútbol. A partir de aquí se va a empezar con un análisis descriptivo de los datos, además de reconocer los datos verdaderamente valiosos con los que se trabajará.
 
+El primer acercamiento por supuesto es sobre el VAR como nueva medida en el fútbol, de aquí que sale el repentino interés de querer saber lo siguiente:
 
-```{r cars}
+1. En qué fecha se implementó el VAR? A partir de ahí podemos hacer comparaciones entre métricas de equipos antes y después del VAR
+2. Si se puede conseguir datos del VAR en México entonces también podemos comparar el efecto del VAR y además el efecto del recién implementado repechaje en México
+
+Implementación del VAR en México: **2018 en el torneo Apertura como piloto, se implementó en 2019 de manera oficial**
+
+Propuestas de métricas para medir la ineficiencia/eficiencia del VAR (Arturo Brizio, presidente de la Comisión de Árbitros en México):
+
+1. La unificación de procedimientos
+2. La línea de intervención (equilibrio entre poco y nunca, solamente when necessary)
+3. Tiempo de revisión (el promedio hasta marzo 2021 es de 1.5 mins, el máximo es 9 mins)
+4. Medidas PEGII: Penal, Expulsión, Gol, Identidad errónea e Incidente no visto por el árbitro
+
+Fuente: https://www.marca.com/claro-mx/futbol/liga-mx/2021/03/25/605cfb42ca4741d5138b4612.html
+
+VAR definición: https://www.marca.com/claro-mx/futbol/liga-mx/2018/10/18/5bc8a11a268e3ebb268b45ce.html
+
+
+```{r}
 #football_matches <- read.csv("/Users/pedrovela/Documentos/Tesis/club_soccer_predictions/spi_matches.csv")
 football_matches <- read.csv("https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv")
-head(football_matches,5)
+football_matches_latest <- read.csv("https://projects.fivethirtyeight.com/soccer-api/club/spi_matches_latest.csv")
+```
+
+```{r}
+#unique(football_matches$league'Mexican Primera Division Torneo Clausura')
+cl16_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Clausura')
+ap16_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Apertura')
+ap20_mx <- filter(football_matches_latest,league == 'Mexican Primera Division Torneo Apertura')
+cl20_mx <- filter(football_matches_latest,league == 'Mexican Primera Division Torneo Clausura')
+cl_ap_1620_mx <- bind_rows(cl16_mx,cl20_mx,ap16_mx,ap20_mx)
+head(ap20_mx,10)
+filter(cl_ap_1620_mx,team2 == 'Puebla')
+names(cl_ap_1620_mx)
+```
+
+Vamos a leer un archivo html donde viene todos los partidos y los xG 
+
+```{r}
+resXML <- htmlParse(content("/Users/pedrovela/Documentos/538_partidos_mx",as="text"))
 ```
 
 
