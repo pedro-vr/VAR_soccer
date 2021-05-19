@@ -60,6 +60,8 @@ names(cl_ap_1620_mx)
 
 Vamos a leer un archivo html donde viene todos los partidos y los xG 
 
+Se intentará realizar web scraping para obtener todos los datos
+
 ```{r}
 resXML <- htmlParse(content("/Users/pedrovela/Documentos/538_partidos_mx",as="text"))
 ```
