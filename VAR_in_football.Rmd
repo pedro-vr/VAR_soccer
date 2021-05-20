@@ -11,12 +11,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include = FALSE}
 #librerias a utilizar 
-#install.packages(c("dplyr","ggplot2","tidyr","httr","XML"))
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
+                   "urltools"))
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(httr)
 library(XML)
+library(rvest)
+library(xml2)
+library(tidyverse)
+library(robotstxt)
+library(urltools)
 ```
 
 Esta es la primera versión del documento en donde se harán los cálculos para el análisis del VAR en el fútbol. A partir de aquí se va a empezar con un análisis descriptivo de los datos, además de reconocer los datos verdaderamente valiosos con los que se trabajará.
@@ -63,7 +69,22 @@ Vamos a leer un archivo html donde viene todos los partidos y los xG
 Se intentará realizar web scraping para obtener todos los datos
 
 ```{r}
-resXML <- htmlParse(content("/Users/pedrovela/Documentos/538_partidos_mx",as="text"))
+#robotstxt::get_robotstxt(urltools::domain("https://projects.fivethirtyeight.com/predicciones-de-futbol/liga-mx/")) %>% cat()
+web_page <- htmlParse("/Users/pedrovela/Downloads/data.html")
+web_page_2 <- htmlParse("/Users/pedrovela/Documentos/doc_538.html")
+results <- getNodeSet(web_page,'//div[1]') %>% sapply(., xmlValue)
+results_2 <- getNodeSet(web_page_2,'//div[1]') %>% sapply(., xmlValue)
+web_page_2
+index <- NULL
+for (i in 1:length(results)) {
+  if('Monterrey' %in% results[i]){
+    index <- c(index,i)
+  }
+}
+
+regexpr('Cookie',results[15]) 
+substr(results[15],357,359)
+b <- xml_child(results)
 ```
 
 
