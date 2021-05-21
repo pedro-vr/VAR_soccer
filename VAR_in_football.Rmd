@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include = FALSE}
 #librerias a utilizar 
 #install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
-                   "urltools"))
+            #       "urltools"))
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -46,45 +46,58 @@ Fuente: https://www.marca.com/claro-mx/futbol/liga-mx/2021/03/25/605cfb42ca4741d
 VAR definición: https://www.marca.com/claro-mx/futbol/liga-mx/2018/10/18/5bc8a11a268e3ebb268b45ce.html
 
 
+Si obtenemos el documento directamente de la página de GitHub de FiveThirtyEight se tienen los partidos actualizados al día.
+
 ```{r}
-#football_matches <- read.csv("/Users/pedrovela/Documentos/Tesis/club_soccer_predictions/spi_matches.csv")
+#al parecer aquí ya se encuentran desde 2016 hasta hoy, se actualiza cada semana
 football_matches <- read.csv("https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv")
-football_matches_latest <- read.csv("https://projects.fivethirtyeight.com/soccer-api/club/spi_matches_latest.csv")
+#filtramos solamente la liga mx
+liga_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Clausura' | league == 'Mexican Primera Division Torneo Apertura')
+```
+
+Las liguillas del torneo mexicano se dieron en las siguientes fechas:
+
+- Clausura 2016: 10 mayo 2017 a 28 mayo 2017
+- Apertura 2017: 22 noviembre 2017 a 10 diciembre 2017
+- Clausura 2017: 2 mayo 2018 a 20 mayo 2018
+- Apertura 2018: 28 noviembre 2018 a 16 diciembre 2018
+- Clausura 2018: 8 mayo 2019 a 26 mayo 2019
+- Apertura 2019: 27 noviembre 2019 a 29 diciembre 2019
+- Clausura 2019: Suspendido por COVID
+- Apertura 2020 (Guardianes 2020): 21 noviembre 2020 a 13 diciembre 2020
+- Clausura 2020 (Guardianes 2021): 8 mayo 2021 a 30 mayo 2021 
+
+El VAR inicia oficialmente en México en el año 2019 (Clausura 2018)
+
+```{r}
+#Empezamos el proceso para crear una columna en donde diga si el partido es temporada
+#regular o liguilla
+liga_mx <- liga_mx %>% mutate(reg_season = if_else(as.POSIXct(date) > as.POSIXct('2017-05-09')
+                                                   & as.POSIXct(date) < as.POSIXct('2017-05-29'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2017-11-21')
+                                                   & as.POSIXct(date) < as.POSIXct('2017-12-11'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2018-05-01')
+                                                   & as.POSIXct(date) < as.POSIXct('2018-05-21'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2018-11-27')
+                                                   & as.POSIXct(date) < as.POSIXct('2018-12-17'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2019-05-07')
+                                                   & as.POSIXct(date) < as.POSIXct('2019-05-27'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2019-11-26')
+                                                   & as.POSIXct(date) < as.POSIXct('2019-12-30'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2020-11-20')
+                                                   & as.POSIXct(date) < as.POSIXct('2020-12-14'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2021-05-07')
+                                                   & as.POSIXct(date) < as.POSIXct('2021-05-31'),1,0)))))))))
+#Creamos otra variable para determinar en qué momento inició COVID
+liga_mx <- liga_mx %>% mutate(after_covid = if_else(as.POSIXct(date) > as.POSIXct('2020-03-16'),1,0))
+#Creamos la variable que nos indica si en el partido estuvo presente el VAR
+liga_mx <- liga_mx %>% mutate(is_VAR = if_else(format(as.Date(date),"%Y") >= 2019,1,0))
 ```
 
 ```{r}
-#unique(football_matches$league'Mexican Primera Division Torneo Clausura')
-cl16_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Clausura')
-ap16_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Apertura')
-ap20_mx <- filter(football_matches_latest,league == 'Mexican Primera Division Torneo Apertura')
-cl20_mx <- filter(football_matches_latest,league == 'Mexican Primera Division Torneo Clausura')
-cl_ap_1620_mx <- bind_rows(cl16_mx,cl20_mx,ap16_mx,ap20_mx)
-head(ap20_mx,10)
-filter(cl_ap_1620_mx,team2 == 'Puebla')
-names(cl_ap_1620_mx)
+head(liga_mx,3)
 ```
 
-Vamos a leer un archivo html donde viene todos los partidos y los xG 
-
-Se intentará realizar web scraping para obtener todos los datos
-
-```{r}
-#robotstxt::get_robotstxt(urltools::domain("https://projects.fivethirtyeight.com/predicciones-de-futbol/liga-mx/")) %>% cat()
-web_page <- htmlParse("/Users/pedrovela/Downloads/data.html")
-web_page_2 <- htmlParse("/Users/pedrovela/Documentos/doc_538.html")
-results <- getNodeSet(web_page,'//div[1]') %>% sapply(., xmlValue)
-results_2 <- getNodeSet(web_page_2,'//div[1]') %>% sapply(., xmlValue)
-web_page_2
-index <- NULL
-for (i in 1:length(results)) {
-  if('Monterrey' %in% results[i]){
-    index <- c(index,i)
-  }
-}
-
-regexpr('Cookie',results[15]) 
-substr(results[15],357,359)
-b <- xml_child(results)
-```
+Tal vez incluir el equipo campeón y subcampeón en nuevas columnas
 
 
