@@ -113,7 +113,6 @@ resultados_cl <- getNodeSet(clausura_2016, '//strong[1]') %>% sapply(., xmlValue
 equipos_cl <- getNodeSet(clausura_2016, '//a[1]') %>% sapply(., xmlValue)
 #En los nodos "div" podemos obtener las probabilidades de los partidos
 probabilidades_cl <- getNodeSet(clausura_2016, '//div[1]') %>% sapply(., xmlValue)
-#resultados[32], substr(resultados[32],1,1)
 ```
 
 ```{r}
@@ -144,8 +143,18 @@ for (nodo in 1:length(resultados_cl)) {
       } 
     }
 }
-#imprimimos el resultado
-print(marcadores_cl)
+#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
+#visitante
+#Vector con goles del equipo local
+score1_cl <- NULL
+#Vector con goles del equipo visitante
+score2_cl <- NULL
+for (t in 1:length(marcadores_cl)) {
+  if(marcadores_cl[t] != 'jornada 6'){
+    score1_cl <- c(score1_cl,as.integer(substr(marcadores_cl[t],1,1)))
+    score2_cl <- c(score2_cl,as.integer(substr(marcadores_cl[t],3,3)))
+  }
+}
 ```
 
 De aquí arriba falta traerse el \% de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)
@@ -160,7 +169,6 @@ resultados_ap <- getNodeSet(apertura_2016, '//strong[1]') %>% sapply(., xmlValue
 equipos_ap <- getNodeSet(apertura_2016, '//a[1]') %>% sapply(., xmlValue)
 #En los nodos "div" podemos obtener las probabilidades de los partidos
 probabilidades_ap <- getNodeSet(apertura_2016, '//div[1]') %>% sapply(., xmlValue)
-#resultados[32], substr(resultados[32],1,1)
 ```
 
 ```{r}
@@ -179,11 +187,153 @@ for (x in 1:length(resultados_ap)) {
     }
   }
 }
-#imprimimos el resultado
-print(marcadores_ap)
+#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
+#visitante
+#Vector con goles del equipo local
+score1_ap <- NULL
+#Vector con goles del equipo visitante
+score2_ap <- NULL
+for (s in 1:length(marcadores_ap)) {
+  score1_ap <- c(score1_ap,as.integer(substr(marcadores_ap[s],1,1)))
+  score2_ap <- c(score2_ap,as.integer(substr(marcadores_ap[s],3,3)))
+}
+
+#Al final unimos los dos vectores de marcadores para tener uno solo
+score1 <- c(score1_cl,score1_ap)
+score2 <- c(score2_cl,score2_ap)
+
+#imprimimos los resultados
+print(score1)
 ```
 
 De aquí arriba falta traerse el \% de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)
+
+```{r}
+#Empezamos el proceso para obtener el % de probabilidad de ganar para el torneo de clausura
+#Empezamos a obtener los resultados de los partidos de la clausura
+#Creamos una variable nula que será el vector con todas las probabilidades
+prob_cl <- NULL
+#Empezamos con el loop para obtener las probabilidades
+#En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
+#se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
+for (x in 1:length(resultados_cl)) {
+  #La probabilidad del partido pospuesto de la jornada 6 está en la entrada 145
+  if(x == 145){
+    #Agregamos el indicador "jornada 6" para saber en donde está la probabilidad correspondiente
+    prob_cl <- c(prob_cl,resultados_cl[147],"jornada 6")
+  } else {
+      #Sabemos que antes de los marcadores de cada jornada está la frase 
+      #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
+      #a partir de ahí vienen las probabilidades en posiciones impares subsecuentes (2,4,6,..,18)
+      if(resultados_cl[x] == "Fixtures & Results Liga MX Clausura"){
+        for (i in seq(2,18,by=2)) {
+          #En la jornada 6 como se jugó un partido menos entonces debemos de recorrer una vez menos a 
+          #i o checar que en verdad nos traigamos probabilidades y no otra cosa
+          if(resultados_cl[x+i-1] != "Fixtures & Results Liga MX Clausura"){
+            #Agregamos la probabilidad al vector
+            prob_cl <- c(prob_cl,resultados_cl[x+i])
+          }
+        }
+      } 
+    }
+}
+#Empezamos el mismo proceso para obtener probabilidades del torneo de apertura
+#Creamos una variable nula que será el vector con todas las probabilidades
+prob_ap <- NULL
+#Empezamos con el loop para obtener las probabilidades
+for (x in 1:length(resultados_ap)) {
+  #Sabemos que antes de los marcadores de cada jornada está la frase 
+  #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
+  #a partir de ahí vienen las probabilidades en posiciones pares subsecuentes (2,4,6,..,18)
+  if(resultados_ap[x] == "Fixtures & Results Liga MX Apertura"){
+    for (i in seq(2,18,by=2)) {
+      #Agregamos la probabilidad al vector
+      prob_ap <- c(prob_ap,resultados_ap[x+i])
+    }
+  }
+}
+```
+
+```{r}
+#Empezamos el proceso para obtener el vector de puras probabilidades
+
+#Proceso para la Clausura
+#Vector que guardará la probabilidad del equipo local
+prob1_cl <- NULL
+#Vector que guardará la probabilidad del equipo visitante
+prob2_cl <- NULL
+#Vector que guardará la probabilidad de empate
+probtie_cl <- NULL
+#Empezamos el loop para obtener las probabilidades en tipo double
+for (a in 1:length(score1_cl)) {
+  #En el vector de probabilidades está la opción de Jornada 6 entonces debemos quitar esa opción
+  if(prob_cl[a] != 'jornada 6'){
+    #Checamos quien ganó el partido, el local, el visitante o empate
+    if(score1_cl[a] > score2_cl[a]){
+      #Guardamos la probabilidad si el local ganó
+      prob1_cl <- c(prob1_cl,as.double(substr(prob_cl[a],1,2))/100)
+    } else {
+      #Si no gano el local entonces agregamos un cero para guardar el lugar 
+      prob1_cl <- c(prob1_cl,0.00)
+    }
+    #Checamos quien ganó el partido, el local, el visitante o empate
+    if(score1_cl[a] < score2_cl[a]){
+      #Guardamos la probabilidad si el visitante ganó
+      prob2_cl <- c(prob2_cl,as.double(substr(prob_cl[a],1,2))/100)
+    } else {
+      #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
+      prob2_cl <- c(prob2_cl,0.00)
+    }
+    #Checamos quien ganó el partido, el local, el visitante o empate
+    if(score1_cl[a] == score2_cl[a]){
+      #Guardamos la probabilidad si hubo empate
+      probtie_cl <- c(probtie_cl,as.double(substr(prob_cl[a],1,2))/100)
+    } else {
+      #Si no hubo empate entonces agregamos un cero para guardar el lugar 
+      probtie_cl <- c(probtie_cl,0.00)
+    }
+  }
+}
+
+#Proceso para la Apertura
+#Vector que guardará la probabilidad del equipo local
+prob1_ap <- NULL
+#Vector que guardará la probabilidad del equipo visitante
+prob2_ap <- NULL
+#Vector que guardará la probabilidad de empate
+probtie_ap <- NULL
+#Empezamos el loop para obtener las probabilidades en tipo double
+for (b in 1:length(score1_ap)) {
+  #Checamos quien ganó el partido, el local, el visitante o empate
+  if(score1_ap[b] > score2_ap[b]){
+    #Guardamos la probabilidad si el local ganó
+    prob1_ap <- c(prob1_ap,as.double(substr(prob_ap[b],1,2))/100)
+  } else {
+    #Si no gano el local entonces agregamos un cero para guardar el lugar 
+    prob1_ap <- c(prob1_ap,0.00)
+  }
+  #Checamos quien ganó el partido, el local, el visitante o empate
+  if(score1_ap[b] < score2_ap[b]){
+    #Guardamos la probabilidad si el visitante ganó
+    prob2_ap <- c(prob2_ap,as.double(substr(prob_ap[b],1,2))/100)
+  } else {
+    #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
+    prob2_ap <- c(prob2_ap,0.00)
+  }
+  #Checamos quien ganó el partido, el local, el visitante o empate
+  if(score1_ap[b] == score2_ap[b]){
+    #Guardamos la probabilidad si hubo empate
+    probtie_ap <- c(probtie_ap,as.double(substr(prob_ap[b],1,2))/100)
+  } else {
+    #Si no hubo empate entonces agregamos un cero para guardar el lugar 
+    probtie_ap <- c(probtie_ap,0.00)
+  }
+}
+
+print(prob1_ap)
+```
+
+**Revisar lo de que en el clausura no se trae la última probabilidad, puede ser porque esta el "jornada 6" entonces sería quitarlo y solo guardar el índice para saber en donde está**
 
 Tal vez incluir el equipo campeón y subcampeón en nuevas columnas
 
