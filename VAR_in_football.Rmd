@@ -119,6 +119,8 @@ probabilidades_cl <- getNodeSet(clausura_2016, '//div[1]') %>% sapply(., xmlValu
 #Empezamos a obtener los resultados de los partidos de la clausura
 #Creamos una variable nula que será el vector con todos los resultados
 marcadores_cl <- NULL
+#Guardamos el número de índice donde está el marcador de la jornada 6
+indice_j6 <- 0
 #Empezamos con el loop para obtener los marcadores
 #En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
 #se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
@@ -126,7 +128,8 @@ for (nodo in 1:length(resultados_cl)) {
   #El marcador del partido pospuesto de la jornada 6 está en la entrada 145
   if(nodo == 145){
     #Agregamos el indicador "jornada 6" para saber en donde está el marcador correspondiente
-    marcadores_cl <- c(marcadores_cl,resultados_cl[146],"jornada 6")
+    marcadores_cl <- c(marcadores_cl,resultados_cl[146])
+    indice_j6 <- length(marcadores_cl)
   } else {
       #Sabemos que antes de los marcadores de cada jornada está la frase 
       #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
@@ -213,6 +216,8 @@ De aquí arriba falta traerse el \% de probabilidad de gane/empate/pérdida del 
 #Empezamos a obtener los resultados de los partidos de la clausura
 #Creamos una variable nula que será el vector con todas las probabilidades
 prob_cl <- NULL
+#Guardamos el número de índice donde está el marcador de la jornada 6
+indice2_j6 <- 0
 #Empezamos con el loop para obtener las probabilidades
 #En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
 #se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
@@ -220,7 +225,8 @@ for (x in 1:length(resultados_cl)) {
   #La probabilidad del partido pospuesto de la jornada 6 está en la entrada 145
   if(x == 145){
     #Agregamos el indicador "jornada 6" para saber en donde está la probabilidad correspondiente
-    prob_cl <- c(prob_cl,resultados_cl[147],"jornada 6")
+    prob_cl <- c(prob_cl,resultados_cl[147])
+    indice2_j6 <- length(prob_cl)
   } else {
       #Sabemos que antes de los marcadores de cada jornada está la frase 
       #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
@@ -266,8 +272,6 @@ prob2_cl <- NULL
 probtie_cl <- NULL
 #Empezamos el loop para obtener las probabilidades en tipo double
 for (a in 1:length(score1_cl)) {
-  #En el vector de probabilidades está la opción de Jornada 6 entonces debemos quitar esa opción
-  if(prob_cl[a] != 'jornada 6'){
     #Checamos quien ganó el partido, el local, el visitante o empate
     if(score1_cl[a] > score2_cl[a]){
       #Guardamos la probabilidad si el local ganó
@@ -292,7 +296,6 @@ for (a in 1:length(score1_cl)) {
       #Si no hubo empate entonces agregamos un cero para guardar el lugar 
       probtie_cl <- c(probtie_cl,0.00)
     }
-  }
 }
 
 #Proceso para la Apertura
@@ -333,7 +336,46 @@ for (b in 1:length(score1_ap)) {
 print(prob1_ap)
 ```
 
-**Revisar lo de que en el clausura no se trae la última probabilidad, puede ser porque esta el "jornada 6" entonces sería quitarlo y solo guardar el índice para saber en donde está**
+```{r}
+#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
+#Vector que guardará a los equipos locales 
+team1_cl <- NULL
+#Vector que guardará a los equipos visitantes
+team2_cl <- NULL
+#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
+#índice 338 y de ahí es cada 2da entrada 
+for (d in seq(338,642,by=2)) {
+  #Agregamos el equipo local
+  team1_cl <- c(team1_cl,substr(equipos_cl[d],1,str_locate(equipos_cl[d],"-")[1]-2))
+  #Agregamos el equipo visitante
+  team2_cl <- c(team2_cl,substr(equipos_cl[d],str_locate(equipos_cl[d],"-")[1]+2,str_length(equipos_cl[d])))
+}
+print(team1_cl)
+```
+
+```{r}
+#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
+#Vector que guardará a los equipos locales 
+team1_ap <- NULL
+#Vector que guardará a los equipos visitantes
+team2_ap <- NULL
+#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
+#índice 338 y de ahí es cada 2da entrada 
+for (c in seq(338,642,by=2)) {
+  #Agregamos el equipo local
+  team1_ap <- c(team1_ap,substr(equipos_ap[c],1,str_locate(equipos_ap[c],"-")[1]-2))
+  #Agregamos el equipo visitante
+  team2_ap <- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],"-")[1]+2,
+                                str_length(equipos_ap[c])))
+}
+print(team1_ap)
+
+#Unimos los vectores de los equipos de clausura y apertura para tener uno solo
+team1 <- c(team1_cl,team1_ap)
+team2 <- c(team2_cl,team2_ap)
+```
+
+**Convertir todos los nombres de los equipos en liga_mx a character**
 
 Tal vez incluir el equipo campeón y subcampeón en nuevas columnas
 
