@@ -375,6 +375,26 @@ team1 <- c(team1_cl,team1_ap)
 team2 <- c(team2_cl,team2_ap)
 ```
 
+```{r}
+#Empezamos el proceso para obtener las probabilidades faltantes
+#Sabemos que los partidos con horarios, marcador, equipos y probabilidades
+#están en los nodos de tipo <div class="fixtures_round">... por lo tanto 
+#de aquí leemos todo
+
+#Partidos de la jornada para la clausura
+jornadas_cl <- getNodeSet(clausura_2016, "//div[@class='fixtures_round']") %>% sapply(., xmlValue)
+#Ejemplo de una entrada correspondiente a una jornada con todos los datos
+#Como los datos interesantes los separa un "\n" entonces los separamos con base
+#en ese caracter y los guardamos en forma de matriz
+jornadas_cl_matrix <- str_split(jornadas_cl[1],"\n",simplify = T)
+#Ejemplo de como obtener una probabilidad de la matriz de arriba
+prob_ejem <- as.double(substr(str_trim(jornadas_cl_matrix[1,234]),1,2))/100
+
+#Lo de arriba se tiene que hacer para las 18 entradas de jornadas_cl
+print(prob_ejem)
+```
+
+**Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo** \n
 **Convertir todos los nombres de los equipos en liga_mx a character**
 
 Tal vez incluir el equipo campeón y subcampeón en nuevas columnas

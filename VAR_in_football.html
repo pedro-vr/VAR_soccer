@@ -438,6 +438,8 @@ probabilidades_cl &lt;- getNodeSet(clausura_2016, '//div[1]') %&gt;% sapply(., x
 <pre class="r"><code>#Empezamos a obtener los resultados de los partidos de la clausura
 #Creamos una variable nula que será el vector con todos los resultados
 marcadores_cl &lt;- NULL
+#Guardamos el número de índice donde está el marcador de la jornada 6
+indice_j6 &lt;- 0
 #Empezamos con el loop para obtener los marcadores
 #En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
 #se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
@@ -445,7 +447,8 @@ for (nodo in 1:length(resultados_cl)) {
   #El marcador del partido pospuesto de la jornada 6 está en la entrada 145
   if(nodo == 145){
     #Agregamos el indicador &quot;jornada 6&quot; para saber en donde está el marcador correspondiente
-    marcadores_cl &lt;- c(marcadores_cl,resultados_cl[146],&quot;jornada 6&quot;)
+    marcadores_cl &lt;- c(marcadores_cl,resultados_cl[146])
+    indice_j6 &lt;- length(marcadores_cl)
   } else {
       #Sabemos que antes de los marcadores de cada jornada está la frase 
       #&quot;Fixtures &amp; Results Liga MX Clausura&quot; entonces la buscamos y sabemos que 
@@ -530,6 +533,8 @@ print(score1)</code></pre>
 #Empezamos a obtener los resultados de los partidos de la clausura
 #Creamos una variable nula que será el vector con todas las probabilidades
 prob_cl &lt;- NULL
+#Guardamos el número de índice donde está el marcador de la jornada 6
+indice2_j6 &lt;- 0
 #Empezamos con el loop para obtener las probabilidades
 #En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
 #se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
@@ -537,7 +542,8 @@ for (x in 1:length(resultados_cl)) {
   #La probabilidad del partido pospuesto de la jornada 6 está en la entrada 145
   if(x == 145){
     #Agregamos el indicador &quot;jornada 6&quot; para saber en donde está la probabilidad correspondiente
-    prob_cl &lt;- c(prob_cl,resultados_cl[147],&quot;jornada 6&quot;)
+    prob_cl &lt;- c(prob_cl,resultados_cl[147])
+    indice2_j6 &lt;- length(prob_cl)
   } else {
       #Sabemos que antes de los marcadores de cada jornada está la frase 
       #&quot;Fixtures &amp; Results Liga MX Clausura&quot; entonces la buscamos y sabemos que 
@@ -580,8 +586,6 @@ prob2_cl &lt;- NULL
 probtie_cl &lt;- NULL
 #Empezamos el loop para obtener las probabilidades en tipo double
 for (a in 1:length(score1_cl)) {
-  #En el vector de probabilidades está la opción de Jornada 6 entonces debemos quitar esa opción
-  if(prob_cl[a] != 'jornada 6'){
     #Checamos quien ganó el partido, el local, el visitante o empate
     if(score1_cl[a] &gt; score2_cl[a]){
       #Guardamos la probabilidad si el local ganó
@@ -606,7 +610,6 @@ for (a in 1:length(score1_cl)) {
       #Si no hubo empate entonces agregamos un cero para guardar el lugar 
       probtie_cl &lt;- c(probtie_cl,0.00)
     }
-  }
 }
 
 #Proceso para la Apertura
@@ -656,7 +659,158 @@ print(prob1_ap)</code></pre>
 ## [121] 0.00 0.00 0.00 0.67 0.39 0.00 0.00 0.37 0.41 0.00 0.48 0.48 0.00 0.49 0.42
 ## [136] 0.38 0.59 0.43 0.00 0.00 0.00 0.00 0.00 0.34 0.00 0.35 0.71 0.00 0.46 0.00
 ## [151] 0.00 0.49 0.47</code></pre>
-<p><strong>Revisar lo de que en el clausura no se trae la última probabilidad, puede ser porque esta el “jornada 6” entonces sería quitarlo y solo guardar el índice para saber en donde está</strong></p>
+<pre class="r"><code>#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
+#Vector que guardará a los equipos locales 
+team1_cl &lt;- NULL
+#Vector que guardará a los equipos visitantes
+team2_cl &lt;- NULL
+#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
+#índice 338 y de ahí es cada 2da entrada 
+for (d in seq(338,642,by=2)) {
+  #Agregamos el equipo local
+  team1_cl &lt;- c(team1_cl,substr(equipos_cl[d],1,str_locate(equipos_cl[d],&quot;-&quot;)[1]-2))
+  #Agregamos el equipo visitante
+  team2_cl &lt;- c(team2_cl,substr(equipos_cl[d],str_locate(equipos_cl[d],&quot;-&quot;)[1]+2,str_length(equipos_cl[d])))
+}
+print(team1_cl)</code></pre>
+<pre><code>##   [1] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;Dorados&quot;         
+##   [4] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Monterrey&quot;       
+##   [7] &quot;Cruz Azul&quot;        &quot;Santos&quot;           &quot;Veracruz&quot;        
+##  [10] &quot;CD Guadalajara&quot;   &quot;Toluca&quot;           &quot;Jaguares Chiapas&quot;
+##  [13] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Tigres&quot;          
+##  [16] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
+##  [19] &quot;Puebla&quot;           &quot;Dorados&quot;          &quot;Atlas&quot;           
+##  [22] &quot;Pachuca&quot;          &quot;Santos&quot;           &quot;Monterrey&quot;       
+##  [25] &quot;CF America&quot;       &quot;Veracruz&quot;         &quot;Pumas&quot;           
+##  [28] &quot;CD Guadalajara&quot;   &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot;
+##  [31] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
+##  [34] &quot;Toluca&quot;           &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
+##  [37] &quot;Pumas&quot;            &quot;Puebla&quot;           &quot;Dorados&quot;         
+##  [40] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Monterrey&quot;       
+##  [43] &quot;CF America&quot;       &quot;Santos&quot;           &quot;Queretaro FC&quot;    
+##  [46] &quot;CD Guadalajara&quot;   &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot;
+##  [49] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
+##  [52] &quot;Veracruz&quot;         &quot;Tijuana&quot;          &quot;Toluca&quot;          
+##  [55] &quot;Atletico Morelia&quot; &quot;Pumas&quot;            &quot;Puebla&quot;          
+##  [58] &quot;Dorados&quot;          &quot;Atlas&quot;            &quot;Pachuca&quot;         
+##  [61] &quot;Monterrey&quot;        &quot;CF America&quot;       &quot;Tijuana&quot;         
+##  [64] &quot;Queretaro FC&quot;     &quot;CD Guadalajara&quot;   &quot;Toluca&quot;          
+##  [67] &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot; &quot;Leon&quot;            
+##  [70] &quot;Tigres&quot;           &quot;Cruz Azul&quot;        &quot;Santos&quot;          
+##  [73] &quot;Veracruz&quot;         &quot;Puebla&quot;           &quot;Pumas&quot;           
+##  [76] &quot;Jaguares Chiapas&quot; &quot;Atlas&quot;            &quot;Pachuca&quot;         
+##  [79] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;CF America&quot;      
+##  [82] &quot;Tijuana&quot;          &quot;CD Guadalajara&quot;   &quot;Toluca&quot;          
+##  [85] &quot;Dorados&quot;          &quot;Atletico Morelia&quot; &quot;Leon&quot;            
+##  [88] &quot;Tigres&quot;           &quot;Santos&quot;           &quot;Cruz Azul&quot;       
+##  [91] &quot;Veracruz&quot;         &quot;Puebla&quot;           &quot;Pumas&quot;           
+##  [94] &quot;Jaguares Chiapas&quot; &quot;Atlas&quot;            &quot;Leon&quot;            
+##  [97] &quot;Monterrey&quot;        &quot;CF America&quot;       &quot;Tijuana&quot;         
+## [100] &quot;Queretaro FC&quot;     &quot;Pachuca&quot;          &quot;CD Guadalajara&quot;  
+## [103] &quot;Dorados&quot;          &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
+## [106] &quot;Santos&quot;           &quot;Toluca&quot;           &quot;Veracruz&quot;        
+## [109] &quot;Pumas&quot;            &quot;CD Guadalajara&quot;   &quot;Leon&quot;            
+## [112] &quot;Puebla&quot;           &quot;Monterrey&quot;        &quot;CF America&quot;      
+## [115] &quot;Tijuana&quot;          &quot;Jaguares Chiapas&quot; &quot;Queretaro FC&quot;    
+## [118] &quot;Toluca&quot;           &quot;Dorados&quot;          &quot;Atlas&quot;           
+## [121] &quot;Pachuca&quot;          &quot;Tigres&quot;           &quot;Atletico Morelia&quot;
+## [124] &quot;Cruz Azul&quot;        &quot;Veracruz&quot;         &quot;Santos&quot;          
+## [127] &quot;CD Guadalajara&quot;   &quot;Pumas&quot;            &quot;Jaguares Chiapas&quot;
+## [130] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Monterrey&quot;       
+## [133] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
+## [136] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;Dorados&quot;         
+## [139] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Tigres&quot;          
+## [142] &quot;Cruz Azul&quot;        &quot;Santos&quot;           &quot;Veracruz&quot;        
+## [145] &quot;CD Guadalajara&quot;   &quot;Toluca&quot;           &quot;Jaguares Chiapas&quot;
+## [148] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Monterrey&quot;       
+## [151] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;</code></pre>
+<pre class="r"><code>#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
+#Vector que guardará a los equipos locales 
+team1_ap &lt;- NULL
+#Vector que guardará a los equipos visitantes
+team2_ap &lt;- NULL
+#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
+#índice 338 y de ahí es cada 2da entrada 
+for (c in seq(338,642,by=2)) {
+  #Agregamos el equipo local
+  team1_ap &lt;- c(team1_ap,substr(equipos_ap[c],1,str_locate(equipos_ap[c],&quot;-&quot;)[1]-2))
+  #Agregamos el equipo visitante
+  team2_ap &lt;- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],&quot;-&quot;)[1]+2,
+                                str_length(equipos_ap[c])))
+}
+print(team1_ap)</code></pre>
+<pre><code>##   [1] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
+##   [4] &quot;Pachuca&quot;          &quot;Atletico Morelia&quot; &quot;Tigres&quot;          
+##   [7] &quot;Cruz Azul&quot;        &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
+##  [10] &quot;Santos&quot;           &quot;Pumas&quot;            &quot;Necaxa&quot;          
+##  [13] &quot;Leon&quot;             &quot;Monterrey&quot;        &quot;Atlas&quot;           
+##  [16] &quot;Cruz Azul&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
+##  [19] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
+##  [22] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atletico Morelia&quot;
+##  [25] &quot;Tigres&quot;           &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
+##  [28] &quot;CD Guadalajara&quot;   &quot;Santos&quot;           &quot;Pumas&quot;           
+##  [31] &quot;Leon&quot;             &quot;Necaxa&quot;           &quot;Monterrey&quot;       
+##  [34] &quot;Queretaro FC&quot;     &quot;Cruz Azul&quot;        &quot;Tijuana&quot;         
+##  [37] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CF America&quot;      
+##  [40] &quot;Tigres&quot;           &quot;Atletico Morelia&quot; &quot;Atlas&quot;           
+##  [43] &quot;Pachuca&quot;          &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
+##  [46] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
+##  [49] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Monterrey&quot;       
+##  [52] &quot;Cruz Azul&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
+##  [55] &quot;Santos&quot;           &quot;Toluca&quot;           &quot;CF America&quot;      
+##  [58] &quot;Pachuca&quot;          &quot;Atletico Morelia&quot; &quot;Tigres&quot;          
+##  [61] &quot;Atlas&quot;            &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
+##  [64] &quot;Tijuana&quot;          &quot;Monterrey&quot;        &quot;Pumas&quot;           
+##  [67] &quot;Leon&quot;             &quot;Necaxa&quot;           &quot;Puebla&quot;          
+##  [70] &quot;CD Guadalajara&quot;   &quot;Atletico Morelia&quot; &quot;Cruz Azul&quot;       
+##  [73] &quot;Santos&quot;           &quot;CF America&quot;       &quot;Pachuca&quot;         
+##  [76] &quot;Atlas&quot;            &quot;Jaguares Chiapas&quot; &quot;Tigres&quot;          
+##  [79] &quot;Queretaro FC&quot;     &quot;Toluca&quot;           &quot;Veracruz&quot;        
+##  [82] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
+##  [85] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Atletico Morelia&quot;
+##  [88] &quot;Monterrey&quot;        &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
+##  [91] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Toluca&quot;          
+##  [94] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
+##  [97] &quot;Tigres&quot;           &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
+## [100] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
+## [103] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Atletico Morelia&quot;
+## [106] &quot;Tigres&quot;           &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
+## [109] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Toluca&quot;          
+## [112] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
+## [115] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
+## [118] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
+## [121] &quot;Veracruz&quot;         &quot;Necaxa&quot;           &quot;Leon&quot;            
+## [124] &quot;Tigres&quot;           &quot;Atletico Morelia&quot; &quot;Cruz Azul&quot;       
+## [127] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Pumas&quot;           
+## [130] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
+## [133] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
+## [136] &quot;Puebla&quot;           &quot;CF America&quot;       &quot;CD Guadalajara&quot;  
+## [139] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Atletico Morelia&quot;
+## [142] &quot;Jaguares Chiapas&quot; &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
+## [145] &quot;Santos&quot;           &quot;Pumas&quot;            &quot;CF America&quot;      
+## [148] &quot;Necaxa&quot;           &quot;Pachuca&quot;          &quot;Atlas&quot;           
+## [151] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;</code></pre>
+<pre class="r"><code>#Unimos los vectores de los equipos de clausura y apertura para tener uno solo
+team1 &lt;- c(team1_cl,team1_ap)
+team2 &lt;- c(team2_cl,team2_ap)</code></pre>
+<pre class="r"><code>#Empezamos el proceso para obtener las probabilidades faltantes
+#Sabemos que los partidos con horarios, marcador, equipos y probabilidades
+#están en los nodos de tipo &lt;div class=&quot;fixtures_round&quot;&gt;... por lo tanto 
+#de aquí leemos todo
+
+#Partidos de la jornada para la clausura
+jornadas_cl &lt;- getNodeSet(clausura_2016, &quot;//div[@class='fixtures_round']&quot;) %&gt;% sapply(., xmlValue)
+#Ejemplo de una entrada correspondiente a una jornada con todos los datos
+#Como los datos interesantes los separa un &quot;\n&quot; entonces los separamos con base
+#en ese caracter y los guardamos en forma de matriz
+jornadas_cl_matrix &lt;- str_split(jornadas_cl[1],&quot;\n&quot;,simplify = T)
+#Ejemplo de como obtener una probabilidad de la matriz de arriba
+prob_ejem &lt;- as.double(substr(str_trim(jornadas_cl_matrix[1,234]),1,2))/100
+
+#Lo de arriba se tiene que hacer para las 18 entradas de jornadas_cl
+print(prob_ejem)</code></pre>
+<pre><code>## [1] 0.29</code></pre>
+<p><strong>Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo</strong>  <strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
 <p>Tal vez incluir el equipo campeón y subcampeón en nuevas columnas</p>
 
 
