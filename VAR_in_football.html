@@ -735,7 +735,8 @@ for (c in seq(338,642,by=2)) {
   #Agregamos el equipo local
   team1_ap &lt;- c(team1_ap,substr(equipos_ap[c],1,str_locate(equipos_ap[c],&quot;-&quot;)[1]-2))
   #Agregamos el equipo visitante
-  team2_ap &lt;- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],&quot;-&quot;)[1]+2,str_length(equipos_ap[c])))
+  team2_ap &lt;- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],&quot;-&quot;)[1]+2,
+                                str_length(equipos_ap[c])))
 }
 print(team1_ap)</code></pre>
 <pre><code>##   [1] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
@@ -792,7 +793,24 @@ print(team1_ap)</code></pre>
 <pre class="r"><code>#Unimos los vectores de los equipos de clausura y apertura para tener uno solo
 team1 &lt;- c(team1_cl,team1_ap)
 team2 &lt;- c(team2_cl,team2_ap)</code></pre>
-<p><strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
+<pre class="r"><code>#Empezamos el proceso para obtener las probabilidades faltantes
+#Sabemos que los partidos con horarios, marcador, equipos y probabilidades
+#están en los nodos de tipo &lt;div class=&quot;fixtures_round&quot;&gt;... por lo tanto 
+#de aquí leemos todo
+
+#Partidos de la jornada para la clausura
+jornadas_cl &lt;- getNodeSet(clausura_2016, &quot;//div[@class='fixtures_round']&quot;) %&gt;% sapply(., xmlValue)
+#Ejemplo de una entrada correspondiente a una jornada con todos los datos
+#Como los datos interesantes los separa un &quot;\n&quot; entonces los separamos con base
+#en ese caracter y los guardamos en forma de matriz
+jornadas_cl_matrix &lt;- str_split(jornadas_cl[1],&quot;\n&quot;,simplify = T)
+#Ejemplo de como obtener una probabilidad de la matriz de arriba
+prob_ejem &lt;- as.double(substr(str_trim(jornadas_cl_matrix[1,234]),1,2))/100
+
+#Lo de arriba se tiene que hacer para las 18 entradas de jornadas_cl
+print(prob_ejem)</code></pre>
+<pre><code>## [1] 0.29</code></pre>
+<p><strong>Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo</strong>  <strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
 <p>Tal vez incluir el equipo campeón y subcampeón en nuevas columnas</p>
 
 
