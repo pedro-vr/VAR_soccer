@@ -408,34 +408,110 @@ for (f in 1:length(fixtures_cl)) {
   }
 }
 
-#Checar lo de la jornada 6
+#Empezamos el procedimiento para traernos las fechas de la clausura
+
+#Declaramos un contador para saber en que momento estamos con la jornada 6 desfazada
+conteo_j6 <- 0
+#Creamos el vector nulo que después guardará todas las fechas
 fechas_cl <- NULL
+#Iniciamos el loop por todas las jornadas
 for (g in 1:length(fixtures_data_cl)) {
-  if(fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura"){
-    inicio <- g + 4
-    for (h in seq(inicio,(inicio + 64),by=8)) {
-      fechas_cl <- c(fechas_cl,fixtures_data_cl[inicio])
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura" & fixtures_data_cl[g + 3] != '6'){
+      #Si estamos en una jornada diferente a la 6 entonces queremos traernos las fechas 
+      #las cuales empiezan en la posición 4 a partir de que inicia una jornada ("Fixtures & Results Liga MX         Clausura")
+      inicio <- g + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
+      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      for (h in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y
+        #en formato yyyy-mm-dd
+        fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[h],4,5),"-",substr(fixtures_data_cl[h],1,2),sep = ""))
+      }
+    #Si ya nos topamos con la jornada 6 nos aseguramos que en realidad estemos ahí
+  } else if (fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura" & fixtures_data_cl[g + 3] == '6') {
+      #Si sí estamos en la jornada 6 entonces aumentamos en 1 el contador de la jornada
+      conteo_j6 <- conteo_j6 + 1
+      #Nos fijamos si es la primera vez que nos topamos con la jornada 6 (que es el partido
+      #que se pospuso)
+      if(conteo_j6 == 1){
+        #Si sí estamos en el partido pospuesto entonces solo nos traemos una fecha la cual 
+        #está en la posición 4 a partir de que inicia la jornada ("Fixtures & Results Liga MX Clausura")
+        #nos traemos la fecha ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[g + 4],4,5),"-",substr(fixtures_data_cl[g + 4],1,2),sep = ""))
+      } else {
+        #si no es la primera vez que nos topamos con la jornada 6 entonces ya se trata de la jornada 
+        #que se jugó en tiempo y forma, por lo tanto queremos las fechas a partir de la posición 4 en adelante
+        #a partir de que inicia la jornada ("Fixtures & Results Liga MX Clausura")
+        inicio <- g + 4
+        #Como en esta joranda hay un partido menos entonces solo recorremos 8x7 = 56 posiciones en total
+        for (j in seq(inicio,(inicio + 56),by=8)) {
+          #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+          #en formato yyyy-mm-dd
+          fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[j],4,5),"-",substr(fixtures_data_cl[j],1,2),sep = ""))
+      }
     }
   }
 }
 
-#5,13,21,29,37,45,53,61,69, ..., 81,89,97,105,113,121,129,137,145
-#4,12,20,28,36,44,52,60,68
+#Empezamos el procedimiento para leer los datos de la apertura
+#Partidos de la jornada para la apertura
+jornadas_ap <- getNodeSet(apertura_2016, "//div[@class='fixtures_round']") %>% sapply(., xmlValue)
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+fixtures_ap <- NULL
+#Vamos a hacer un loop para guardar los datos de las 17 jornadas
+for (k in 1:length(jornadas_ap)) {
+  #Guardamos cada jornada como una matriz
+  fixtures_ap <- c(fixtures_ap,str_split(jornadas_ap[k],"\n",simplify = T))
+}
 
+#ya que tenemos los datos de todas las jornadas ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+#Array en donde vamos a guardar todo
+fixtures_data_ap <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (l in 1:length(fixtures_ap)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(fixtures_ap[l])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    fixtures_data_ap <- c(fixtures_data_ap,data_trim)
+  }
+}
 
-#Ejemplo de una entrada correspondiente a una jornada con todos los datos
-#Como los datos interesantes los separa un "\n" entonces los separamos con base
-#en ese caracter y los guardamos en forma de matriz
-jornadas_cl_matrix <- str_split(jornadas_cl[1],"\n",simplify = T)
-#Ejemplo de como obtener una probabilidad de la matriz de arriba
-prob_ejem <- as.double(substr(str_trim(jornadas_cl_matrix[1,234]),1,2))/100
+#Empezamos el procedimiento para traernos las fechas de la apertura
 
-#Lo de arriba se tiene que hacer para las 18 entradas de jornadas_cl
-print(prob_ejem)
+#Creamos el vector nulo que después guardará todas las fechas
+fechas_ap <- NULL
+#Iniciamos el loop por todas las jornadas
+for (m in 1:length(fixtures_data_ap)) {
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_ap[m] == "Fixtures & Results Liga MX Apertura"){
+      #Queremos traernos las fechas las cuales empiezan en la posición 4 a partir de que inicia una jornada
+      #("Fixtures & Results Liga MX Apertura")
+      inicio <- m + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
+      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      for (n in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_ap <- c(fechas_ap,paste("2016-",substr(fixtures_data_ap[n],4,5),"-",substr(fixtures_data_ap[n],1,2),sep = ""))
+    }
+  }
+}
 
-#11,13,16,25,28,30
-#37,39,42,50,52,55
-#63
+#Concatenamos todas las fechas para tener un solo vector de fechas
+date <- c(fechas_cl,fechas_ap)
+print(date[1:30])
+
+#Empezamos el proceso para obtener el nombre de los equipos para la clausura
+
 ```
 
 **Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo** \n
