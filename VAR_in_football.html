@@ -800,16 +800,139 @@ team2 &lt;- c(team2_cl,team2_ap)</code></pre>
 
 #Partidos de la jornada para la clausura
 jornadas_cl &lt;- getNodeSet(clausura_2016, &quot;//div[@class='fixtures_round']&quot;) %&gt;% sapply(., xmlValue)
-#Ejemplo de una entrada correspondiente a una jornada con todos los datos
-#Como los datos interesantes los separa un &quot;\n&quot; entonces los separamos con base
-#en ese caracter y los guardamos en forma de matriz
-jornadas_cl_matrix &lt;- str_split(jornadas_cl[1],&quot;\n&quot;,simplify = T)
-#Ejemplo de como obtener una probabilidad de la matriz de arriba
-prob_ejem &lt;- as.double(substr(str_trim(jornadas_cl_matrix[1,234]),1,2))/100
+#Se va a guardar todos los datos &quot;servibles&quot; o &quot;útiles&quot; dentro de un solo array
+fixtures_cl &lt;- NULL
+#Vamos a hacer un loop para guardar los datos de las 17 jornadas
+for (e in 1:length(jornadas_cl)) {
+  #Guardamos cada jornada como una matriz
+  fixtures_cl &lt;- c(fixtures_cl,str_split(jornadas_cl[e],&quot;\n&quot;,simplify = T))
+}
 
-#Lo de arriba se tiene que hacer para las 18 entradas de jornadas_cl
-print(prob_ejem)</code></pre>
-<pre><code>## [1] 0.29</code></pre>
+#ya que tenemos los datos de todas las jornadas ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+#Array en donde vamos a guardar todo
+fixtures_data_cl &lt;- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (f in 1:length(fixtures_cl)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim &lt;- str_trim(fixtures_cl[f])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) &gt; 0){
+    #Guardamos el dato útil en un array 
+    fixtures_data_cl &lt;- c(fixtures_data_cl,data_trim)
+  }
+}
+
+#Empezamos el procedimiento para traernos las fechas de la clausura
+
+#Declaramos un contador para saber en que momento estamos con la jornada 6 desfazada
+conteo_j6 &lt;- 0
+#Creamos el vector nulo que después guardará todas las fechas
+fechas_cl &lt;- NULL
+#Iniciamos el loop por todas las jornadas
+for (g in 1:length(fixtures_data_cl)) {
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_cl[g] == &quot;Fixtures &amp; Results Liga MX Clausura&quot; &amp; fixtures_data_cl[g + 3] != '6'){
+      #Si estamos en una jornada diferente a la 6 entonces queremos traernos las fechas 
+      #las cuales empiezan en la posición 4 a partir de que inicia una jornada (&quot;Fixtures &amp; Results Liga MX         Clausura&quot;)
+      inicio &lt;- g + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
+      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      for (h in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y
+        #en formato yyyy-mm-dd
+        fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[h],4,5),&quot;-&quot;,substr(fixtures_data_cl[h],1,2),sep = &quot;&quot;))
+      }
+    #Si ya nos topamos con la jornada 6 nos aseguramos que en realidad estemos ahí
+  } else if (fixtures_data_cl[g] == &quot;Fixtures &amp; Results Liga MX Clausura&quot; &amp; fixtures_data_cl[g + 3] == '6') {
+      #Si sí estamos en la jornada 6 entonces aumentamos en 1 el contador de la jornada
+      conteo_j6 &lt;- conteo_j6 + 1
+      #Nos fijamos si es la primera vez que nos topamos con la jornada 6 (que es el partido
+      #que se pospuso)
+      if(conteo_j6 == 1){
+        #Si sí estamos en el partido pospuesto entonces solo nos traemos una fecha la cual 
+        #está en la posición 4 a partir de que inicia la jornada (&quot;Fixtures &amp; Results Liga MX Clausura&quot;)
+        #nos traemos la fecha ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[g + 4],4,5),&quot;-&quot;,substr(fixtures_data_cl[g + 4],1,2),sep = &quot;&quot;))
+      } else {
+        #si no es la primera vez que nos topamos con la jornada 6 entonces ya se trata de la jornada 
+        #que se jugó en tiempo y forma, por lo tanto queremos las fechas a partir de la posición 4 en adelante
+        #a partir de que inicia la jornada (&quot;Fixtures &amp; Results Liga MX Clausura&quot;)
+        inicio &lt;- g + 4
+        #Como en esta joranda hay un partido menos entonces solo recorremos 8x7 = 56 posiciones en total
+        for (j in seq(inicio,(inicio + 56),by=8)) {
+          #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+          #en formato yyyy-mm-dd
+          fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[j],4,5),&quot;-&quot;,substr(fixtures_data_cl[j],1,2),sep = &quot;&quot;))
+      }
+    }
+  }
+}
+
+#Empezamos el procedimiento para leer los datos de la apertura
+#Partidos de la jornada para la apertura
+jornadas_ap &lt;- getNodeSet(apertura_2016, &quot;//div[@class='fixtures_round']&quot;) %&gt;% sapply(., xmlValue)
+#Se va a guardar todos los datos &quot;servibles&quot; o &quot;útiles&quot; dentro de un solo array
+fixtures_ap &lt;- NULL
+#Vamos a hacer un loop para guardar los datos de las 17 jornadas
+for (k in 1:length(jornadas_ap)) {
+  #Guardamos cada jornada como una matriz
+  fixtures_ap &lt;- c(fixtures_ap,str_split(jornadas_ap[k],&quot;\n&quot;,simplify = T))
+}
+
+#ya que tenemos los datos de todas las jornadas ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+#Array en donde vamos a guardar todo
+fixtures_data_ap &lt;- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (l in 1:length(fixtures_ap)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim &lt;- str_trim(fixtures_ap[l])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) &gt; 0){
+    #Guardamos el dato útil en un array 
+    fixtures_data_ap &lt;- c(fixtures_data_ap,data_trim)
+  }
+}
+
+#Empezamos el procedimiento para traernos las fechas de la apertura
+
+#Creamos el vector nulo que después guardará todas las fechas
+fechas_ap &lt;- NULL
+#Iniciamos el loop por todas las jornadas
+for (m in 1:length(fixtures_data_ap)) {
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_ap[m] == &quot;Fixtures &amp; Results Liga MX Apertura&quot;){
+      #Queremos traernos las fechas las cuales empiezan en la posición 4 a partir de que inicia una jornada
+      #(&quot;Fixtures &amp; Results Liga MX Apertura&quot;)
+      inicio &lt;- m + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
+      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      for (n in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_ap &lt;- c(fechas_ap,paste(&quot;2016-&quot;,substr(fixtures_data_ap[n],4,5),&quot;-&quot;,substr(fixtures_data_ap[n],1,2),sep = &quot;&quot;))
+    }
+  }
+}
+
+#Concatenamos todas las fechas para tener un solo vector de fechas
+date &lt;- c(fechas_cl,fechas_ap)
+print(date[1:30])</code></pre>
+<pre><code>##  [1] &quot;2016-05-08&quot; &quot;2016-05-08&quot; &quot;2016-05-07&quot; &quot;2016-05-07&quot; &quot;2016-05-07&quot;
+##  [6] &quot;2016-05-07&quot; &quot;2016-05-07&quot; &quot;2016-05-06&quot; &quot;2016-05-06&quot; &quot;2016-05-01&quot;
+## [11] &quot;2016-05-01&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot;
+## [16] &quot;2016-04-30&quot; &quot;2016-04-29&quot; &quot;2016-04-29&quot; &quot;2016-04-24&quot; &quot;2016-04-23&quot;
+## [21] &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot;
+## [26] &quot;2016-04-22&quot; &quot;2016-04-22&quot; &quot;2016-04-17&quot; &quot;2016-04-16&quot; &quot;2016-04-16&quot;</code></pre>
+<pre class="r"><code>#Empezamos el proceso para obtener el nombre de los equipos para la clausura</code></pre>
 <p><strong>Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo</strong>  <strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
 <p>Tal vez incluir el equipo campeón y subcampeón en nuevas columnas</p>
 
