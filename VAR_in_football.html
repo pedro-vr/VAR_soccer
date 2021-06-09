@@ -429,371 +429,11 @@ liga_mx &lt;- liga_mx %&gt;% mutate(is_VAR = if_else(format(as.Date(date),&quot;
 <pre class="r"><code>#empezamos a leer el XML con los datos del año 2016
 #leemos el archivo desde el el cual vamos a obtener los datos
 clausura_2016 &lt;- htmlParse(&quot;/Users/pedrovela/Documentos/Git_repos/VAR_soccer/clausura_2016.html&quot;)
-#En los nodos &quot;strong&quot; podemos obtener los marcadores y algunas probabilidades de los partidos
-resultados_cl &lt;- getNodeSet(clausura_2016, '//strong[1]') %&gt;% sapply(., xmlValue)
-#En los nodos &quot;a&quot; podemos obtener el nombre de los equipos 
-equipos_cl &lt;- getNodeSet(clausura_2016, '//a[1]') %&gt;% sapply(., xmlValue)
-#En los nodos &quot;div&quot; podemos obtener las probabilidades de los partidos
-probabilidades_cl &lt;- getNodeSet(clausura_2016, '//div[1]') %&gt;% sapply(., xmlValue)</code></pre>
-<pre class="r"><code>#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todos los resultados
-marcadores_cl &lt;- NULL
-#Guardamos el número de índice donde está el marcador de la jornada 6
-indice_j6 &lt;- 0
-#Empezamos con el loop para obtener los marcadores
-#En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
-#se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
-for (nodo in 1:length(resultados_cl)) {
-  #El marcador del partido pospuesto de la jornada 6 está en la entrada 145
-  if(nodo == 145){
-    #Agregamos el indicador &quot;jornada 6&quot; para saber en donde está el marcador correspondiente
-    marcadores_cl &lt;- c(marcadores_cl,resultados_cl[146])
-    indice_j6 &lt;- length(marcadores_cl)
-  } else {
-      #Sabemos que antes de los marcadores de cada jornada está la frase 
-      #&quot;Fixtures &amp; Results Liga MX Clausura&quot; entonces la buscamos y sabemos que 
-      #a partir de ahí vienen los marcadores en posiciones impares subsecuentes (1,3,5,..,17)
-      if(resultados_cl[nodo] == &quot;Fixtures &amp; Results Liga MX Clausura&quot;){
-        for (i in seq(1,17,by=2)) {
-          #En la jornada 6 como se jugó un partido menos entonces debemos de recorrer una vez menos a 
-          #i o checar que en verdad nos traigamos marcadores y no otra cosa
-          if(resultados_cl[nodo+i] != &quot;Fixtures &amp; Results Liga MX Clausura&quot;){
-            #Agregamos el marcador al vector
-            marcadores_cl &lt;- c(marcadores_cl,resultados_cl[nodo+i])
-          }
-        }
-      } 
-    }
-}
-#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
-#visitante
-#Vector con goles del equipo local
-score1_cl &lt;- NULL
-#Vector con goles del equipo visitante
-score2_cl &lt;- NULL
-for (t in 1:length(marcadores_cl)) {
-  if(marcadores_cl[t] != 'jornada 6'){
-    score1_cl &lt;- c(score1_cl,as.integer(substr(marcadores_cl[t],1,1)))
-    score2_cl &lt;- c(score2_cl,as.integer(substr(marcadores_cl[t],3,3)))
-  }
-}</code></pre>
-<p>De aquí arriba falta traerse el % de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)</p>
-<pre class="r"><code>#empezamos a leer el XML con los datos del año 2016
+#empezamos a leer el XML con los datos del año 2016
 #leemos el archivo desde el el cual vamos a obtener los datos
-apertura_2016 &lt;- htmlParse(&quot;/Users/pedrovela/Documentos/Git_repos/VAR_soccer/apertura_2016.html&quot;)
-#En los nodos &quot;strong&quot; podemos obtener los marcadores y algunas probabilidades de los partidos
-resultados_ap &lt;- getNodeSet(apertura_2016, '//strong[1]') %&gt;% sapply(., xmlValue)
-#En los nodos &quot;a&quot; podemos obtener el nombre de los equipos 
-equipos_ap &lt;- getNodeSet(apertura_2016, '//a[1]') %&gt;% sapply(., xmlValue)
-#En los nodos &quot;div&quot; podemos obtener las probabilidades de los partidos
-probabilidades_ap &lt;- getNodeSet(apertura_2016, '//div[1]') %&gt;% sapply(., xmlValue)</code></pre>
-<pre class="r"><code>#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todos los resultados
-marcadores_ap &lt;- NULL
-#Empezamos con el loop para obtener los marcadores
-for (x in 1:length(resultados_ap)) {
-  #Sabemos que antes de los marcadores de cada jornada está la frase 
-  #&quot;Fixtures &amp; Results Liga MX Apertura&quot; entonces la buscamos y sabemos que 
-  #a partir de ahí vienen los marcadores en posiciones impares subsecuentes (1,3,5,..,17)
-  if(resultados_ap[x] == &quot;Fixtures &amp; Results Liga MX Apertura&quot;){
-    for (i in seq(1,17,by=2)) {
-      #Agregamos el marcador al vector
-      marcadores_ap &lt;- c(marcadores_ap,resultados_ap[x+i])
-    }
-  }
-}
-#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
-#visitante
-#Vector con goles del equipo local
-score1_ap &lt;- NULL
-#Vector con goles del equipo visitante
-score2_ap &lt;- NULL
-for (s in 1:length(marcadores_ap)) {
-  score1_ap &lt;- c(score1_ap,as.integer(substr(marcadores_ap[s],1,1)))
-  score2_ap &lt;- c(score2_ap,as.integer(substr(marcadores_ap[s],3,3)))
-}
+apertura_2016 &lt;- htmlParse(&quot;/Users/pedrovela/Documentos/Git_repos/VAR_soccer/apertura_2016.html&quot;)</code></pre>
+<pre class="r"><code>#Empezamos el proceso para obtener los datos valiosos de todas las jornadas
 
-#Al final unimos los dos vectores de marcadores para tener uno solo
-score1 &lt;- c(score1_cl,score1_ap)
-score2 &lt;- c(score2_cl,score2_ap)
-
-#imprimimos los resultados
-print(score1)</code></pre>
-<pre><code>##   [1] 3 1 0 0 2 1 0 0 1 2 0 0 3 0 0 3 0 2 2 1 1 1 2 3 0 2 3 1 1 1 4 5 0 4 1 1 1
-##  [38] 0 3 1 2 6 6 2 0 4 0 2 1 2 0 0 2 0 2 4 0 3 0 6 1 2 0 1 1 3 1 1 2 0 1 3 3 1
-##  [75] 2 3 1 2 1 0 4 0 1 0 2 1 1 4 1 4 0 3 1 1 1 5 5 3 1 2 5 0 2 1 2 1 1 1 1 1 1
-## [112] 4 3 2 1 1 2 1 0 1 3 3 2 2 2 2 2 0 1 1 3 1 1 1 3 1 3 0 0 1 2 1 1 1 2 1 1 2
-## [149] 2 1 0 1 1 0 1 1 3 1 1 2 1 2 2 1 3 1 4 1 2 2 0 2 0 3 3 3 2 1 1 1 1 2 1 3 3
-## [186] 1 1 1 2 0 2 1 0 1 2 3 1 2 1 1 2 3 3 1 5 1 1 1 1 2 2 2 0 3 2 0 2 5 2 0 1 3
-## [223] 0 1 0 3 0 2 0 0 2 1 2 1 0 4 2 2 4 0 0 3 1 1 0 2 0 1 1 1 1 1 2 5 2 1 2 3 4
-## [260] 3 2 0 1 0 1 3 3 2 0 2 0 2 0 2 2 0 1 3 1 2 1 1 0 1 1 1 2 4 3 3 1 0 0 2 0 0
-## [297] 2 0 1 2 0 5 1 1 2 2</code></pre>
-<p>De aquí arriba falta traerse el % de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)</p>
-<pre class="r"><code>#Empezamos el proceso para obtener el % de probabilidad de ganar para el torneo de clausura
-#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todas las probabilidades
-prob_cl &lt;- NULL
-#Guardamos el número de índice donde está el marcador de la jornada 6
-indice2_j6 &lt;- 0
-#Empezamos con el loop para obtener las probabilidades
-#En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
-#se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
-for (x in 1:length(resultados_cl)) {
-  #La probabilidad del partido pospuesto de la jornada 6 está en la entrada 145
-  if(x == 145){
-    #Agregamos el indicador &quot;jornada 6&quot; para saber en donde está la probabilidad correspondiente
-    prob_cl &lt;- c(prob_cl,resultados_cl[147])
-    indice2_j6 &lt;- length(prob_cl)
-  } else {
-      #Sabemos que antes de los marcadores de cada jornada está la frase 
-      #&quot;Fixtures &amp; Results Liga MX Clausura&quot; entonces la buscamos y sabemos que 
-      #a partir de ahí vienen las probabilidades en posiciones impares subsecuentes (2,4,6,..,18)
-      if(resultados_cl[x] == &quot;Fixtures &amp; Results Liga MX Clausura&quot;){
-        for (i in seq(2,18,by=2)) {
-          #En la jornada 6 como se jugó un partido menos entonces debemos de recorrer una vez menos a 
-          #i o checar que en verdad nos traigamos probabilidades y no otra cosa
-          if(resultados_cl[x+i-1] != &quot;Fixtures &amp; Results Liga MX Clausura&quot;){
-            #Agregamos la probabilidad al vector
-            prob_cl &lt;- c(prob_cl,resultados_cl[x+i])
-          }
-        }
-      } 
-    }
-}
-#Empezamos el mismo proceso para obtener probabilidades del torneo de apertura
-#Creamos una variable nula que será el vector con todas las probabilidades
-prob_ap &lt;- NULL
-#Empezamos con el loop para obtener las probabilidades
-for (x in 1:length(resultados_ap)) {
-  #Sabemos que antes de los marcadores de cada jornada está la frase 
-  #&quot;Fixtures &amp; Results Liga MX Clausura&quot; entonces la buscamos y sabemos que 
-  #a partir de ahí vienen las probabilidades en posiciones pares subsecuentes (2,4,6,..,18)
-  if(resultados_ap[x] == &quot;Fixtures &amp; Results Liga MX Apertura&quot;){
-    for (i in seq(2,18,by=2)) {
-      #Agregamos la probabilidad al vector
-      prob_ap &lt;- c(prob_ap,resultados_ap[x+i])
-    }
-  }
-}</code></pre>
-<pre class="r"><code>#Empezamos el proceso para obtener el vector de puras probabilidades
-
-#Proceso para la Clausura
-#Vector que guardará la probabilidad del equipo local
-prob1_cl &lt;- NULL
-#Vector que guardará la probabilidad del equipo visitante
-prob2_cl &lt;- NULL
-#Vector que guardará la probabilidad de empate
-probtie_cl &lt;- NULL
-#Empezamos el loop para obtener las probabilidades en tipo double
-for (a in 1:length(score1_cl)) {
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] &gt; score2_cl[a]){
-      #Guardamos la probabilidad si el local ganó
-      prob1_cl &lt;- c(prob1_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no gano el local entonces agregamos un cero para guardar el lugar 
-      prob1_cl &lt;- c(prob1_cl,0.00)
-    }
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] &lt; score2_cl[a]){
-      #Guardamos la probabilidad si el visitante ganó
-      prob2_cl &lt;- c(prob2_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
-      prob2_cl &lt;- c(prob2_cl,0.00)
-    }
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] == score2_cl[a]){
-      #Guardamos la probabilidad si hubo empate
-      probtie_cl &lt;- c(probtie_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no hubo empate entonces agregamos un cero para guardar el lugar 
-      probtie_cl &lt;- c(probtie_cl,0.00)
-    }
-}
-
-#Proceso para la Apertura
-#Vector que guardará la probabilidad del equipo local
-prob1_ap &lt;- NULL
-#Vector que guardará la probabilidad del equipo visitante
-prob2_ap &lt;- NULL
-#Vector que guardará la probabilidad de empate
-probtie_ap &lt;- NULL
-#Empezamos el loop para obtener las probabilidades en tipo double
-for (b in 1:length(score1_ap)) {
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] &gt; score2_ap[b]){
-    #Guardamos la probabilidad si el local ganó
-    prob1_ap &lt;- c(prob1_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no gano el local entonces agregamos un cero para guardar el lugar 
-    prob1_ap &lt;- c(prob1_ap,0.00)
-  }
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] &lt; score2_ap[b]){
-    #Guardamos la probabilidad si el visitante ganó
-    prob2_ap &lt;- c(prob2_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
-    prob2_ap &lt;- c(prob2_ap,0.00)
-  }
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] == score2_ap[b]){
-    #Guardamos la probabilidad si hubo empate
-    probtie_ap &lt;- c(probtie_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no hubo empate entonces agregamos un cero para guardar el lugar 
-    probtie_ap &lt;- c(probtie_ap,0.00)
-  }
-}
-
-print(prob1_ap)</code></pre>
-<pre><code>##   [1] 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.36 0.27 0.64 0.00 0.52 0.00 0.74 0.00
-##  [16] 0.35 0.00 0.00 0.00 0.00 0.46 0.62 0.64 0.39 0.00 0.00 0.00 0.00 0.00 0.00
-##  [31] 0.56 0.60 0.00 0.00 0.00 0.68 0.00 0.46 0.52 0.00 0.00 0.42 0.60 0.00 0.00
-##  [46] 0.00 0.60 0.53 0.37 0.35 0.00 0.62 0.00 0.60 0.00 0.00 0.56 0.60 0.00 0.00
-##  [61] 0.31 0.00 0.00 0.52 0.56 0.51 0.00 0.00 0.44 0.00 0.00 0.00 0.45 0.00 0.00
-##  [76] 0.00 0.00 0.68 0.35 0.41 0.00 0.00 0.46 0.59 0.44 0.52 0.00 0.00 0.00 0.29
-##  [91] 0.42 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.47 0.00 0.34 0.00 0.00 0.44 0.52
-## [106] 0.47 0.55 0.00 0.00 0.00 0.00 0.00 0.45 0.46 0.59 0.00 0.50 0.00 0.38 0.00
-## [121] 0.00 0.00 0.00 0.67 0.39 0.00 0.00 0.37 0.41 0.00 0.48 0.48 0.00 0.49 0.42
-## [136] 0.38 0.59 0.43 0.00 0.00 0.00 0.00 0.00 0.34 0.00 0.35 0.71 0.00 0.46 0.00
-## [151] 0.00 0.49 0.47</code></pre>
-<pre class="r"><code>#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
-#Vector que guardará a los equipos locales 
-team1_cl &lt;- NULL
-#Vector que guardará a los equipos visitantes
-team2_cl &lt;- NULL
-#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
-#índice 338 y de ahí es cada 2da entrada 
-for (d in seq(338,642,by=2)) {
-  #Agregamos el equipo local
-  team1_cl &lt;- c(team1_cl,substr(equipos_cl[d],1,str_locate(equipos_cl[d],&quot;-&quot;)[1]-2))
-  #Agregamos el equipo visitante
-  team2_cl &lt;- c(team2_cl,substr(equipos_cl[d],str_locate(equipos_cl[d],&quot;-&quot;)[1]+2,str_length(equipos_cl[d])))
-}
-print(team1_cl)</code></pre>
-<pre><code>##   [1] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;Dorados&quot;         
-##   [4] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Monterrey&quot;       
-##   [7] &quot;Cruz Azul&quot;        &quot;Santos&quot;           &quot;Veracruz&quot;        
-##  [10] &quot;CD Guadalajara&quot;   &quot;Toluca&quot;           &quot;Jaguares Chiapas&quot;
-##  [13] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Tigres&quot;          
-##  [16] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
-##  [19] &quot;Puebla&quot;           &quot;Dorados&quot;          &quot;Atlas&quot;           
-##  [22] &quot;Pachuca&quot;          &quot;Santos&quot;           &quot;Monterrey&quot;       
-##  [25] &quot;CF America&quot;       &quot;Veracruz&quot;         &quot;Pumas&quot;           
-##  [28] &quot;CD Guadalajara&quot;   &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot;
-##  [31] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
-##  [34] &quot;Toluca&quot;           &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
-##  [37] &quot;Pumas&quot;            &quot;Puebla&quot;           &quot;Dorados&quot;         
-##  [40] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Monterrey&quot;       
-##  [43] &quot;CF America&quot;       &quot;Santos&quot;           &quot;Queretaro FC&quot;    
-##  [46] &quot;CD Guadalajara&quot;   &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot;
-##  [49] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
-##  [52] &quot;Veracruz&quot;         &quot;Tijuana&quot;          &quot;Toluca&quot;          
-##  [55] &quot;Atletico Morelia&quot; &quot;Pumas&quot;            &quot;Puebla&quot;          
-##  [58] &quot;Dorados&quot;          &quot;Atlas&quot;            &quot;Pachuca&quot;         
-##  [61] &quot;Monterrey&quot;        &quot;CF America&quot;       &quot;Tijuana&quot;         
-##  [64] &quot;Queretaro FC&quot;     &quot;CD Guadalajara&quot;   &quot;Toluca&quot;          
-##  [67] &quot;Jaguares Chiapas&quot; &quot;Atletico Morelia&quot; &quot;Leon&quot;            
-##  [70] &quot;Tigres&quot;           &quot;Cruz Azul&quot;        &quot;Santos&quot;          
-##  [73] &quot;Veracruz&quot;         &quot;Puebla&quot;           &quot;Pumas&quot;           
-##  [76] &quot;Jaguares Chiapas&quot; &quot;Atlas&quot;            &quot;Pachuca&quot;         
-##  [79] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;CF America&quot;      
-##  [82] &quot;Tijuana&quot;          &quot;CD Guadalajara&quot;   &quot;Toluca&quot;          
-##  [85] &quot;Dorados&quot;          &quot;Atletico Morelia&quot; &quot;Leon&quot;            
-##  [88] &quot;Tigres&quot;           &quot;Santos&quot;           &quot;Cruz Azul&quot;       
-##  [91] &quot;Veracruz&quot;         &quot;Puebla&quot;           &quot;Pumas&quot;           
-##  [94] &quot;Jaguares Chiapas&quot; &quot;Atlas&quot;            &quot;Leon&quot;            
-##  [97] &quot;Monterrey&quot;        &quot;CF America&quot;       &quot;Tijuana&quot;         
-## [100] &quot;Queretaro FC&quot;     &quot;Pachuca&quot;          &quot;CD Guadalajara&quot;  
-## [103] &quot;Dorados&quot;          &quot;Tigres&quot;           &quot;Cruz Azul&quot;       
-## [106] &quot;Santos&quot;           &quot;Toluca&quot;           &quot;Veracruz&quot;        
-## [109] &quot;Pumas&quot;            &quot;CD Guadalajara&quot;   &quot;Leon&quot;            
-## [112] &quot;Puebla&quot;           &quot;Monterrey&quot;        &quot;CF America&quot;      
-## [115] &quot;Tijuana&quot;          &quot;Jaguares Chiapas&quot; &quot;Queretaro FC&quot;    
-## [118] &quot;Toluca&quot;           &quot;Dorados&quot;          &quot;Atlas&quot;           
-## [121] &quot;Pachuca&quot;          &quot;Tigres&quot;           &quot;Atletico Morelia&quot;
-## [124] &quot;Cruz Azul&quot;        &quot;Veracruz&quot;         &quot;Santos&quot;          
-## [127] &quot;CD Guadalajara&quot;   &quot;Pumas&quot;            &quot;Jaguares Chiapas&quot;
-## [130] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Monterrey&quot;       
-## [133] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;    
-## [136] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;Dorados&quot;         
-## [139] &quot;Atlas&quot;            &quot;Pachuca&quot;          &quot;Tigres&quot;          
-## [142] &quot;Cruz Azul&quot;        &quot;Santos&quot;           &quot;Veracruz&quot;        
-## [145] &quot;CD Guadalajara&quot;   &quot;Toluca&quot;           &quot;Jaguares Chiapas&quot;
-## [148] &quot;Atletico Morelia&quot; &quot;Leon&quot;             &quot;Monterrey&quot;       
-## [151] &quot;CF America&quot;       &quot;Tijuana&quot;          &quot;Queretaro FC&quot;</code></pre>
-<pre class="r"><code>#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
-#Vector que guardará a los equipos locales 
-team1_ap &lt;- NULL
-#Vector que guardará a los equipos visitantes
-team2_ap &lt;- NULL
-#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
-#índice 338 y de ahí es cada 2da entrada 
-for (c in seq(338,642,by=2)) {
-  #Agregamos el equipo local
-  team1_ap &lt;- c(team1_ap,substr(equipos_ap[c],1,str_locate(equipos_ap[c],&quot;-&quot;)[1]-2))
-  #Agregamos el equipo visitante
-  team2_ap &lt;- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],&quot;-&quot;)[1]+2,
-                                str_length(equipos_ap[c])))
-}
-print(team1_ap)</code></pre>
-<pre><code>##   [1] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
-##   [4] &quot;Pachuca&quot;          &quot;Atletico Morelia&quot; &quot;Tigres&quot;          
-##   [7] &quot;Cruz Azul&quot;        &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
-##  [10] &quot;Santos&quot;           &quot;Pumas&quot;            &quot;Necaxa&quot;          
-##  [13] &quot;Leon&quot;             &quot;Monterrey&quot;        &quot;Atlas&quot;           
-##  [16] &quot;Cruz Azul&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
-##  [19] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
-##  [22] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atletico Morelia&quot;
-##  [25] &quot;Tigres&quot;           &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
-##  [28] &quot;CD Guadalajara&quot;   &quot;Santos&quot;           &quot;Pumas&quot;           
-##  [31] &quot;Leon&quot;             &quot;Necaxa&quot;           &quot;Monterrey&quot;       
-##  [34] &quot;Queretaro FC&quot;     &quot;Cruz Azul&quot;        &quot;Tijuana&quot;         
-##  [37] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CF America&quot;      
-##  [40] &quot;Tigres&quot;           &quot;Atletico Morelia&quot; &quot;Atlas&quot;           
-##  [43] &quot;Pachuca&quot;          &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
-##  [46] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
-##  [49] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Monterrey&quot;       
-##  [52] &quot;Cruz Azul&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
-##  [55] &quot;Santos&quot;           &quot;Toluca&quot;           &quot;CF America&quot;      
-##  [58] &quot;Pachuca&quot;          &quot;Atletico Morelia&quot; &quot;Tigres&quot;          
-##  [61] &quot;Atlas&quot;            &quot;Jaguares Chiapas&quot; &quot;Veracruz&quot;        
-##  [64] &quot;Tijuana&quot;          &quot;Monterrey&quot;        &quot;Pumas&quot;           
-##  [67] &quot;Leon&quot;             &quot;Necaxa&quot;           &quot;Puebla&quot;          
-##  [70] &quot;CD Guadalajara&quot;   &quot;Atletico Morelia&quot; &quot;Cruz Azul&quot;       
-##  [73] &quot;Santos&quot;           &quot;CF America&quot;       &quot;Pachuca&quot;         
-##  [76] &quot;Atlas&quot;            &quot;Jaguares Chiapas&quot; &quot;Tigres&quot;          
-##  [79] &quot;Queretaro FC&quot;     &quot;Toluca&quot;           &quot;Veracruz&quot;        
-##  [82] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
-##  [85] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Atletico Morelia&quot;
-##  [88] &quot;Monterrey&quot;        &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
-##  [91] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Toluca&quot;          
-##  [94] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
-##  [97] &quot;Tigres&quot;           &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
-## [100] &quot;Puebla&quot;           &quot;Pumas&quot;            &quot;CD Guadalajara&quot;  
-## [103] &quot;Necaxa&quot;           &quot;Leon&quot;             &quot;Atletico Morelia&quot;
-## [106] &quot;Tigres&quot;           &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
-## [109] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Toluca&quot;          
-## [112] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
-## [115] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
-## [118] &quot;Puebla&quot;           &quot;Toluca&quot;           &quot;CD Guadalajara&quot;  
-## [121] &quot;Veracruz&quot;         &quot;Necaxa&quot;           &quot;Leon&quot;            
-## [124] &quot;Tigres&quot;           &quot;Atletico Morelia&quot; &quot;Cruz Azul&quot;       
-## [127] &quot;Santos&quot;           &quot;Jaguares Chiapas&quot; &quot;Pumas&quot;           
-## [130] &quot;CF America&quot;       &quot;Pachuca&quot;          &quot;Atlas&quot;           
-## [133] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;         
-## [136] &quot;Puebla&quot;           &quot;CF America&quot;       &quot;CD Guadalajara&quot;  
-## [139] &quot;Leon&quot;             &quot;Tigres&quot;           &quot;Atletico Morelia&quot;
-## [142] &quot;Jaguares Chiapas&quot; &quot;Cruz Azul&quot;        &quot;Veracruz&quot;        
-## [145] &quot;Santos&quot;           &quot;Pumas&quot;            &quot;CF America&quot;      
-## [148] &quot;Necaxa&quot;           &quot;Pachuca&quot;          &quot;Atlas&quot;           
-## [151] &quot;Monterrey&quot;        &quot;Queretaro FC&quot;     &quot;Tijuana&quot;</code></pre>
-<pre class="r"><code>#Unimos los vectores de los equipos de clausura y apertura para tener uno solo
-team1 &lt;- c(team1_cl,team1_ap)
-team2 &lt;- c(team2_cl,team2_ap)</code></pre>
-<pre class="r"><code>#Empezamos el proceso para obtener las probabilidades faltantes
 #Sabemos que los partidos con horarios, marcador, equipos y probabilidades
 #están en los nodos de tipo &lt;div class=&quot;fixtures_round&quot;&gt;... por lo tanto 
 #de aquí leemos todo
@@ -825,12 +465,27 @@ for (f in 1:length(fixtures_cl)) {
   }
 }
 
-#Empezamos el procedimiento para traernos las fechas de la clausura
+#Empezamos el procedimiento para traernos los datos de las jornadas de la clausura
 
 #Declaramos un contador para saber en que momento estamos con la jornada 6 desfazada
 conteo_j6 &lt;- 0
 #Creamos el vector nulo que después guardará todas las fechas
 fechas_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_cl &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_cl &lt;- NULL
+
 #Iniciamos el loop por todas las jornadas
 for (g in 1:length(fixtures_data_cl)) {
   #Primero nos fijamos en todas las jornadas menos en la 6
@@ -838,13 +493,27 @@ for (g in 1:length(fixtures_data_cl)) {
       #Si estamos en una jornada diferente a la 6 entonces queremos traernos las fechas 
       #las cuales empiezan en la posición 4 a partir de que inicia una jornada (&quot;Fixtures &amp; Results Liga MX         Clausura&quot;)
       inicio &lt;- g + 4
-      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
-      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
-      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato valioso (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal,
+      #por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
       for (h in seq(inicio,(inicio + 64),by=8)) {
         #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y
         #en formato yyyy-mm-dd
         fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[h],4,5),&quot;-&quot;,substr(fixtures_data_cl[h],1,2),sep = &quot;&quot;))
+        #guardamos el equipo local
+        local_cl &lt;- c(local_cl,substr(fixtures_data_cl[h+1],1,str_locate(fixtures_data_cl[h+1],&quot;-&quot;)[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl &lt;- c(visitante_cl,substr(fixtures_data_cl[h+1],                                  str_locate(fixtures_data_cl[h+1],&quot;-&quot;)[1]+2,str_length(fixtures_data_cl[h+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl &lt;- c(goles_local_cl,as.integer(substr(fixtures_data_cl[h+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl &lt;- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[h+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl &lt;- c(prob_local_cl,as.double(substr(fixtures_data_cl[h+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl &lt;- c(prob_empate_cl,as.double(substr(fixtures_data_cl[h+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl &lt;- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[h+7],1,2))/100)
       }
     #Si ya nos topamos con la jornada 6 nos aseguramos que en realidad estemos ahí
   } else if (fixtures_data_cl[g] == &quot;Fixtures &amp; Results Liga MX Clausura&quot; &amp; fixtures_data_cl[g + 3] == '6') {
@@ -858,6 +527,20 @@ for (g in 1:length(fixtures_data_cl)) {
         #nos traemos la fecha ya con el año (paste) y sin la hora (substr) y 
         #en formato yyyy-mm-dd
         fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[g + 4],4,5),&quot;-&quot;,substr(fixtures_data_cl[g + 4],1,2),sep = &quot;&quot;))
+        #guardamos el equipo local
+        local_cl &lt;- c(local_cl,substr(fixtures_data_cl[g+5],1,str_locate(fixtures_data_cl[g+5],&quot;-&quot;)[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl &lt;- c(visitante_cl,substr(fixtures_data_cl[g+5],                                  str_locate(fixtures_data_cl[g+5],&quot;-&quot;)[1]+2,str_length(fixtures_data_cl[g+5])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl &lt;- c(goles_local_cl,as.integer(substr(fixtures_data_cl[g+6],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl &lt;- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[g+6],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl &lt;- c(prob_local_cl,as.double(substr(fixtures_data_cl[g+9],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl &lt;- c(prob_empate_cl,as.double(substr(fixtures_data_cl[g+10],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl &lt;- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[g+11],1,2))/100)
       } else {
         #si no es la primera vez que nos topamos con la jornada 6 entonces ya se trata de la jornada 
         #que se jugó en tiempo y forma, por lo tanto queremos las fechas a partir de la posición 4 en adelante
@@ -868,12 +551,27 @@ for (g in 1:length(fixtures_data_cl)) {
           #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
           #en formato yyyy-mm-dd
           fechas_cl &lt;- c(fechas_cl,paste(&quot;2016-&quot;,substr(fixtures_data_cl[j],4,5),&quot;-&quot;,substr(fixtures_data_cl[j],1,2),sep = &quot;&quot;))
+          #guardamos el equipo local
+          local_cl &lt;- c(local_cl,substr(fixtures_data_cl[j+1],1,str_locate(fixtures_data_cl[j+1],&quot;-&quot;)[1]-2))
+          #guardamos el equipo visitante
+          visitante_cl &lt;- c(visitante_cl,substr(fixtures_data_cl[j+1],                                  str_locate(fixtures_data_cl[j+1],&quot;-&quot;)[1]+2,str_length(fixtures_data_cl[j+1])))
+          #guardamos los goles que anotó el local ya en forma de entero
+          goles_local_cl &lt;- c(goles_local_cl,as.integer(substr(fixtures_data_cl[j+2],1,1)))
+          #guardamos los goles que anotó el visitante ya en forma de entero
+          goles_visitante_cl &lt;- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[j+2],3,3)))
+          #guardamos la probabilidad de victoria del local en forma de decimal
+          prob_local_cl &lt;- c(prob_local_cl,as.double(substr(fixtures_data_cl[j+5],1,2))/100)
+          #guardamos la probabilidad de empate en forma de decimal
+          prob_empate_cl &lt;- c(prob_empate_cl,as.double(substr(fixtures_data_cl[j+6],1,2))/100)
+          #guardamos la probabilidad de victoria del visitante en forma de decimal
+          prob_visitante_cl &lt;- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[j+7],1,2))/100)
       }
     }
   }
 }
 
 #Empezamos el procedimiento para leer los datos de la apertura
+
 #Partidos de la jornada para la apertura
 jornadas_ap &lt;- getNodeSet(apertura_2016, &quot;//div[@class='fixtures_round']&quot;) %&gt;% sapply(., xmlValue)
 #Se va a guardar todos los datos &quot;servibles&quot; o &quot;útiles&quot; dentro de un solo array
@@ -888,6 +586,7 @@ for (k in 1:length(jornadas_ap)) {
 #con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
 #y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
 #útil y lo guardamos en un nuevo array
+
 #Array en donde vamos a guardar todo
 fixtures_data_ap &lt;- NULL
 #Iniciamos el loop en donde vamos a guardar todos los datos
@@ -901,39 +600,103 @@ for (l in 1:length(fixtures_ap)) {
   }
 }
 
-#Empezamos el procedimiento para traernos las fechas de la apertura
+#Empezamos el procedimiento para traernos los datos de las jornadas de la apertura
 
 #Creamos el vector nulo que después guardará todas las fechas
 fechas_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_ap &lt;- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_ap &lt;- NULL
+
 #Iniciamos el loop por todas las jornadas
 for (m in 1:length(fixtures_data_ap)) {
   #Primero nos fijamos en todas las jornadas menos en la 6
   if(fixtures_data_ap[m] == &quot;Fixtures &amp; Results Liga MX Apertura&quot;){
-      #Queremos traernos las fechas las cuales empiezan en la posición 4 a partir de que inicia una jornada
-      #(&quot;Fixtures &amp; Results Liga MX Apertura&quot;)
+      #Queremos traernos los datos de los partidos los cuales empiezan en la posición 4 
+      #a partir de que inicia una jornada (&quot;Fixtures &amp; Results Liga MX Apertura&quot;)
       inicio &lt;- m + 4
-      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
-      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
-      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato importante  (by=8) 
+      #y son en total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos 
+      #como tal, por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
       for (n in seq(inicio,(inicio + 64),by=8)) {
         #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
         #en formato yyyy-mm-dd
         fechas_ap &lt;- c(fechas_ap,paste(&quot;2016-&quot;,substr(fixtures_data_ap[n],4,5),&quot;-&quot;,substr(fixtures_data_ap[n],1,2),sep = &quot;&quot;))
+        #guardamos el equipo local
+        local_ap &lt;- c(local_ap,substr(fixtures_data_ap[n+1],1,str_locate(fixtures_data_ap[n+1],&quot;-&quot;)[1]-2))
+        #guardamos el equipo visitante
+        visitante_ap &lt;- c(visitante_ap,substr(fixtures_data_ap[n+1],                                  str_locate(fixtures_data_ap[n+1],&quot;-&quot;)[1]+2,str_length(fixtures_data_ap[n+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_ap &lt;- c(goles_local_ap,as.integer(substr(fixtures_data_ap[n+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_ap &lt;- c(goles_visitante_ap,as.integer(substr(fixtures_data_ap[n+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_ap &lt;- c(prob_local_ap,as.double(substr(fixtures_data_ap[n+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_ap &lt;- c(prob_empate_ap,as.double(substr(fixtures_data_ap[n+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_ap &lt;- c(prob_visitante_ap,as.double(substr(fixtures_data_ap[n+7],1,2))/100)
     }
   }
 }
 
-#Concatenamos todas las fechas para tener un solo vector de fechas
+#Empezamos a unir los datos recién obtenidos de la clausura y apertura para tener uno solo
+#para cada variable. Los nombramos igual que en el dataset liga_mx para unirlos
+
+#Concatenamos todas las fechas
 date &lt;- c(fechas_cl,fechas_ap)
-print(date[1:30])</code></pre>
-<pre><code>##  [1] &quot;2016-05-08&quot; &quot;2016-05-08&quot; &quot;2016-05-07&quot; &quot;2016-05-07&quot; &quot;2016-05-07&quot;
-##  [6] &quot;2016-05-07&quot; &quot;2016-05-07&quot; &quot;2016-05-06&quot; &quot;2016-05-06&quot; &quot;2016-05-01&quot;
-## [11] &quot;2016-05-01&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot; &quot;2016-04-30&quot;
-## [16] &quot;2016-04-30&quot; &quot;2016-04-29&quot; &quot;2016-04-29&quot; &quot;2016-04-24&quot; &quot;2016-04-23&quot;
-## [21] &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot; &quot;2016-04-23&quot;
-## [26] &quot;2016-04-22&quot; &quot;2016-04-22&quot; &quot;2016-04-17&quot; &quot;2016-04-16&quot; &quot;2016-04-16&quot;</code></pre>
-<pre class="r"><code>#Empezamos el proceso para obtener el nombre de los equipos para la clausura</code></pre>
-<p><strong>Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo</strong>  <strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
+#Concatenamos los nombres de los equipos locales
+team1 &lt;- c(local_cl,local_ap)
+#Concatenamos los nombres de los equipos visitantes
+team2 &lt;- c(visitante_cl,visitante_ap)
+#Concatenamos los goles anotados por los locales
+score1 &lt;- c(goles_local_cl,goles_local_ap)
+#Concatenamos los goles anotados por los visitantes
+score2 &lt;- c(goles_visitante_cl,goles_visitante_ap)
+#Concatenamos las probabilidades de victoria de los locales
+prob1 &lt;- c(prob_local_cl,prob_local_ap)
+#Concatenamos las probabilidades de empate
+probtie &lt;- c(prob_empate_cl,prob_empate_ap)
+#Concatenamos las probabilidades de victoria de los visitantes
+prob2 &lt;- c(prob_visitante_cl,prob_visitante_ap)
+
+#con el propósito de unir estos resultados con la tabla liga_mx entonces se crearán 
+#vectores con nombres y valores similares a algunas ya en liga_mx para poder unirlos mejor
+
+#Vector que te dice la temporada (2016 y 2017)
+season &lt;- c(rep(2016,length(local_cl)),rep(2017,length(local_ap)))
+#Vector que te dice el id del torneo
+league_id &lt;- c(rep(1975,length(local_cl)),rep(1952,length(local_ap)))
+#Vector que te dice el nombre del torneo
+league &lt;- c(rep(&quot;Mexican Primera Division Torneo Clausura&quot;,length(local_cl)),rep(&quot;Mexican Primera Division Torneo Apertura&quot;,length(local_ap)))
+
+#Armamos una tabla preeliminar de los datos obtenidos que se va a unir a liga_mx
+liga_mx_2 &lt;- data.frame(season,date,league_id,league,team1,team2,prob1,prob2,probtie,score1,score2,stringsAsFactors = F)
+
+#spi1, spi2, proj_score1, proj_score2, importance1, importance2, xg1, xg2, nsxg1, nsxg2, 
+#adj_score1, adj_score2
+
+head(liga_mx_2,3)</code></pre>
+<pre><code>##   season       date league_id                                   league   team1
+## 1   2016 2016-05-08      1975 Mexican Primera Division Torneo Clausura  Puebla
+## 2   2016 2016-05-08      1975 Mexican Primera Division Torneo Clausura   Pumas
+## 3   2016 2016-05-07      1975 Mexican Primera Division Torneo Clausura Dorados
+##          team2 prob1 prob2 probtie score1 score2
+## 1 Queretaro FC  0.38  0.34    0.28      3      1
+## 2   CF America  0.33  0.40    0.27      1      1
+## 3         Leon  0.26  0.47    0.27      0      1</code></pre>
+<p><strong>Convertir todos los nombres de los equipos en liga_mx a character</strong></p>
 <p>Tal vez incluir el equipo campeón y subcampeón en nuevas columnas</p>
 
 

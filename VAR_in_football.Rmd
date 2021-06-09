@@ -107,276 +107,14 @@ arrange(liga_mx,date)
 #empezamos a leer el XML con los datos del año 2016
 #leemos el archivo desde el el cual vamos a obtener los datos
 clausura_2016 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/clausura_2016.html")
-#En los nodos "strong" podemos obtener los marcadores y algunas probabilidades de los partidos
-resultados_cl <- getNodeSet(clausura_2016, '//strong[1]') %>% sapply(., xmlValue)
-#En los nodos "a" podemos obtener el nombre de los equipos 
-equipos_cl <- getNodeSet(clausura_2016, '//a[1]') %>% sapply(., xmlValue)
-#En los nodos "div" podemos obtener las probabilidades de los partidos
-probabilidades_cl <- getNodeSet(clausura_2016, '//div[1]') %>% sapply(., xmlValue)
-```
-
-```{r}
-#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todos los resultados
-marcadores_cl <- NULL
-#Guardamos el número de índice donde está el marcador de la jornada 6
-indice_j6 <- 0
-#Empezamos con el loop para obtener los marcadores
-#En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
-#se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
-for (nodo in 1:length(resultados_cl)) {
-  #El marcador del partido pospuesto de la jornada 6 está en la entrada 145
-  if(nodo == 145){
-    #Agregamos el indicador "jornada 6" para saber en donde está el marcador correspondiente
-    marcadores_cl <- c(marcadores_cl,resultados_cl[146])
-    indice_j6 <- length(marcadores_cl)
-  } else {
-      #Sabemos que antes de los marcadores de cada jornada está la frase 
-      #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
-      #a partir de ahí vienen los marcadores en posiciones impares subsecuentes (1,3,5,..,17)
-      if(resultados_cl[nodo] == "Fixtures & Results Liga MX Clausura"){
-        for (i in seq(1,17,by=2)) {
-          #En la jornada 6 como se jugó un partido menos entonces debemos de recorrer una vez menos a 
-          #i o checar que en verdad nos traigamos marcadores y no otra cosa
-          if(resultados_cl[nodo+i] != "Fixtures & Results Liga MX Clausura"){
-            #Agregamos el marcador al vector
-            marcadores_cl <- c(marcadores_cl,resultados_cl[nodo+i])
-          }
-        }
-      } 
-    }
-}
-#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
-#visitante
-#Vector con goles del equipo local
-score1_cl <- NULL
-#Vector con goles del equipo visitante
-score2_cl <- NULL
-for (t in 1:length(marcadores_cl)) {
-  if(marcadores_cl[t] != 'jornada 6'){
-    score1_cl <- c(score1_cl,as.integer(substr(marcadores_cl[t],1,1)))
-    score2_cl <- c(score2_cl,as.integer(substr(marcadores_cl[t],3,3)))
-  }
-}
-```
-
-De aquí arriba falta traerse el \% de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)
-
-```{r}
 #empezamos a leer el XML con los datos del año 2016
 #leemos el archivo desde el el cual vamos a obtener los datos
 apertura_2016 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/apertura_2016.html")
-#En los nodos "strong" podemos obtener los marcadores y algunas probabilidades de los partidos
-resultados_ap <- getNodeSet(apertura_2016, '//strong[1]') %>% sapply(., xmlValue)
-#En los nodos "a" podemos obtener el nombre de los equipos 
-equipos_ap <- getNodeSet(apertura_2016, '//a[1]') %>% sapply(., xmlValue)
-#En los nodos "div" podemos obtener las probabilidades de los partidos
-probabilidades_ap <- getNodeSet(apertura_2016, '//div[1]') %>% sapply(., xmlValue)
 ```
 
 ```{r}
-#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todos los resultados
-marcadores_ap <- NULL
-#Empezamos con el loop para obtener los marcadores
-for (x in 1:length(resultados_ap)) {
-  #Sabemos que antes de los marcadores de cada jornada está la frase 
-  #"Fixtures & Results Liga MX Apertura" entonces la buscamos y sabemos que 
-  #a partir de ahí vienen los marcadores en posiciones impares subsecuentes (1,3,5,..,17)
-  if(resultados_ap[x] == "Fixtures & Results Liga MX Apertura"){
-    for (i in seq(1,17,by=2)) {
-      #Agregamos el marcador al vector
-      marcadores_ap <- c(marcadores_ap,resultados_ap[x+i])
-    }
-  }
-}
-#Empezamos a tratar el vector de los marcadores para separar el marcador del equipo local y equipo
-#visitante
-#Vector con goles del equipo local
-score1_ap <- NULL
-#Vector con goles del equipo visitante
-score2_ap <- NULL
-for (s in 1:length(marcadores_ap)) {
-  score1_ap <- c(score1_ap,as.integer(substr(marcadores_ap[s],1,1)))
-  score2_ap <- c(score2_ap,as.integer(substr(marcadores_ap[s],3,3)))
-}
+#Empezamos el proceso para obtener los datos valiosos de todas las jornadas
 
-#Al final unimos los dos vectores de marcadores para tener uno solo
-score1 <- c(score1_cl,score1_ap)
-score2 <- c(score2_cl,score2_ap)
-
-#imprimimos los resultados
-print(score1)
-```
-
-De aquí arriba falta traerse el \% de probabilidad de gane/empate/pérdida del equipo que resultó victorioso en el partido (o empate)
-
-```{r}
-#Empezamos el proceso para obtener el % de probabilidad de ganar para el torneo de clausura
-#Empezamos a obtener los resultados de los partidos de la clausura
-#Creamos una variable nula que será el vector con todas las probabilidades
-prob_cl <- NULL
-#Guardamos el número de índice donde está el marcador de la jornada 6
-indice2_j6 <- 0
-#Empezamos con el loop para obtener las probabilidades
-#En este torneo se disputó un partido de la jornada 6 en una fecha diferente entonces
-#se debe tomar en cuenta para poder asignarlo a la jornada correspondiente
-for (x in 1:length(resultados_cl)) {
-  #La probabilidad del partido pospuesto de la jornada 6 está en la entrada 145
-  if(x == 145){
-    #Agregamos el indicador "jornada 6" para saber en donde está la probabilidad correspondiente
-    prob_cl <- c(prob_cl,resultados_cl[147])
-    indice2_j6 <- length(prob_cl)
-  } else {
-      #Sabemos que antes de los marcadores de cada jornada está la frase 
-      #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
-      #a partir de ahí vienen las probabilidades en posiciones impares subsecuentes (2,4,6,..,18)
-      if(resultados_cl[x] == "Fixtures & Results Liga MX Clausura"){
-        for (i in seq(2,18,by=2)) {
-          #En la jornada 6 como se jugó un partido menos entonces debemos de recorrer una vez menos a 
-          #i o checar que en verdad nos traigamos probabilidades y no otra cosa
-          if(resultados_cl[x+i-1] != "Fixtures & Results Liga MX Clausura"){
-            #Agregamos la probabilidad al vector
-            prob_cl <- c(prob_cl,resultados_cl[x+i])
-          }
-        }
-      } 
-    }
-}
-#Empezamos el mismo proceso para obtener probabilidades del torneo de apertura
-#Creamos una variable nula que será el vector con todas las probabilidades
-prob_ap <- NULL
-#Empezamos con el loop para obtener las probabilidades
-for (x in 1:length(resultados_ap)) {
-  #Sabemos que antes de los marcadores de cada jornada está la frase 
-  #"Fixtures & Results Liga MX Clausura" entonces la buscamos y sabemos que 
-  #a partir de ahí vienen las probabilidades en posiciones pares subsecuentes (2,4,6,..,18)
-  if(resultados_ap[x] == "Fixtures & Results Liga MX Apertura"){
-    for (i in seq(2,18,by=2)) {
-      #Agregamos la probabilidad al vector
-      prob_ap <- c(prob_ap,resultados_ap[x+i])
-    }
-  }
-}
-```
-
-```{r}
-#Empezamos el proceso para obtener el vector de puras probabilidades
-
-#Proceso para la Clausura
-#Vector que guardará la probabilidad del equipo local
-prob1_cl <- NULL
-#Vector que guardará la probabilidad del equipo visitante
-prob2_cl <- NULL
-#Vector que guardará la probabilidad de empate
-probtie_cl <- NULL
-#Empezamos el loop para obtener las probabilidades en tipo double
-for (a in 1:length(score1_cl)) {
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] > score2_cl[a]){
-      #Guardamos la probabilidad si el local ganó
-      prob1_cl <- c(prob1_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no gano el local entonces agregamos un cero para guardar el lugar 
-      prob1_cl <- c(prob1_cl,0.00)
-    }
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] < score2_cl[a]){
-      #Guardamos la probabilidad si el visitante ganó
-      prob2_cl <- c(prob2_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
-      prob2_cl <- c(prob2_cl,0.00)
-    }
-    #Checamos quien ganó el partido, el local, el visitante o empate
-    if(score1_cl[a] == score2_cl[a]){
-      #Guardamos la probabilidad si hubo empate
-      probtie_cl <- c(probtie_cl,as.double(substr(prob_cl[a],1,2))/100)
-    } else {
-      #Si no hubo empate entonces agregamos un cero para guardar el lugar 
-      probtie_cl <- c(probtie_cl,0.00)
-    }
-}
-
-#Proceso para la Apertura
-#Vector que guardará la probabilidad del equipo local
-prob1_ap <- NULL
-#Vector que guardará la probabilidad del equipo visitante
-prob2_ap <- NULL
-#Vector que guardará la probabilidad de empate
-probtie_ap <- NULL
-#Empezamos el loop para obtener las probabilidades en tipo double
-for (b in 1:length(score1_ap)) {
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] > score2_ap[b]){
-    #Guardamos la probabilidad si el local ganó
-    prob1_ap <- c(prob1_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no gano el local entonces agregamos un cero para guardar el lugar 
-    prob1_ap <- c(prob1_ap,0.00)
-  }
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] < score2_ap[b]){
-    #Guardamos la probabilidad si el visitante ganó
-    prob2_ap <- c(prob2_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no gano el visitante entonces agregamos un cero para guardar el lugar 
-    prob2_ap <- c(prob2_ap,0.00)
-  }
-  #Checamos quien ganó el partido, el local, el visitante o empate
-  if(score1_ap[b] == score2_ap[b]){
-    #Guardamos la probabilidad si hubo empate
-    probtie_ap <- c(probtie_ap,as.double(substr(prob_ap[b],1,2))/100)
-  } else {
-    #Si no hubo empate entonces agregamos un cero para guardar el lugar 
-    probtie_ap <- c(probtie_ap,0.00)
-  }
-}
-
-print(prob1_ap)
-```
-
-```{r}
-#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
-#Vector que guardará a los equipos locales 
-team1_cl <- NULL
-#Vector que guardará a los equipos visitantes
-team2_cl <- NULL
-#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
-#índice 338 y de ahí es cada 2da entrada 
-for (d in seq(338,642,by=2)) {
-  #Agregamos el equipo local
-  team1_cl <- c(team1_cl,substr(equipos_cl[d],1,str_locate(equipos_cl[d],"-")[1]-2))
-  #Agregamos el equipo visitante
-  team2_cl <- c(team2_cl,substr(equipos_cl[d],str_locate(equipos_cl[d],"-")[1]+2,str_length(equipos_cl[d])))
-}
-print(team1_cl)
-```
-
-```{r}
-#Empezamos con el proceso para obtener los equipos visitantes y locales de cada jornada para el clausura 
-#Vector que guardará a los equipos locales 
-team1_ap <- NULL
-#Vector que guardará a los equipos visitantes
-team2_ap <- NULL
-#Empezamos el loop para obtener los equipos, sabemos que la los primeros equipos empiezan en el 
-#índice 338 y de ahí es cada 2da entrada 
-for (c in seq(338,642,by=2)) {
-  #Agregamos el equipo local
-  team1_ap <- c(team1_ap,substr(equipos_ap[c],1,str_locate(equipos_ap[c],"-")[1]-2))
-  #Agregamos el equipo visitante
-  team2_ap <- c(team2_ap,substr(equipos_ap[c],str_locate(equipos_ap[c],"-")[1]+2,
-                                str_length(equipos_ap[c])))
-}
-print(team1_ap)
-
-#Unimos los vectores de los equipos de clausura y apertura para tener uno solo
-team1 <- c(team1_cl,team1_ap)
-team2 <- c(team2_cl,team2_ap)
-```
-
-```{r}
-#Empezamos el proceso para obtener las probabilidades faltantes
 #Sabemos que los partidos con horarios, marcador, equipos y probabilidades
 #están en los nodos de tipo <div class="fixtures_round">... por lo tanto 
 #de aquí leemos todo
@@ -408,12 +146,27 @@ for (f in 1:length(fixtures_cl)) {
   }
 }
 
-#Empezamos el procedimiento para traernos las fechas de la clausura
+#Empezamos el procedimiento para traernos los datos de las jornadas de la clausura
 
 #Declaramos un contador para saber en que momento estamos con la jornada 6 desfazada
 conteo_j6 <- 0
 #Creamos el vector nulo que después guardará todas las fechas
 fechas_cl <- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_cl <- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_cl <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_cl <- NULL
+
 #Iniciamos el loop por todas las jornadas
 for (g in 1:length(fixtures_data_cl)) {
   #Primero nos fijamos en todas las jornadas menos en la 6
@@ -421,13 +174,27 @@ for (g in 1:length(fixtures_data_cl)) {
       #Si estamos en una jornada diferente a la 6 entonces queremos traernos las fechas 
       #las cuales empiezan en la posición 4 a partir de que inicia una jornada ("Fixtures & Results Liga MX         Clausura")
       inicio <- g + 4
-      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
-      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
-      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato valioso (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal,
+      #por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
       for (h in seq(inicio,(inicio + 64),by=8)) {
         #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y
         #en formato yyyy-mm-dd
         fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[h],4,5),"-",substr(fixtures_data_cl[h],1,2),sep = ""))
+        #guardamos el equipo local
+        local_cl <- c(local_cl,substr(fixtures_data_cl[h+1],1,str_locate(fixtures_data_cl[h+1],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[h+1],                                  str_locate(fixtures_data_cl[h+1],"-")[1]+2,str_length(fixtures_data_cl[h+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[h+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[h+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[h+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[h+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[h+7],1,2))/100)
       }
     #Si ya nos topamos con la jornada 6 nos aseguramos que en realidad estemos ahí
   } else if (fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura" & fixtures_data_cl[g + 3] == '6') {
@@ -441,6 +208,20 @@ for (g in 1:length(fixtures_data_cl)) {
         #nos traemos la fecha ya con el año (paste) y sin la hora (substr) y 
         #en formato yyyy-mm-dd
         fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[g + 4],4,5),"-",substr(fixtures_data_cl[g + 4],1,2),sep = ""))
+        #guardamos el equipo local
+        local_cl <- c(local_cl,substr(fixtures_data_cl[g+5],1,str_locate(fixtures_data_cl[g+5],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[g+5],                                  str_locate(fixtures_data_cl[g+5],"-")[1]+2,str_length(fixtures_data_cl[g+5])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[g+6],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[g+6],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[g+9],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[g+10],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[g+11],1,2))/100)
       } else {
         #si no es la primera vez que nos topamos con la jornada 6 entonces ya se trata de la jornada 
         #que se jugó en tiempo y forma, por lo tanto queremos las fechas a partir de la posición 4 en adelante
@@ -451,12 +232,27 @@ for (g in 1:length(fixtures_data_cl)) {
           #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
           #en formato yyyy-mm-dd
           fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[j],4,5),"-",substr(fixtures_data_cl[j],1,2),sep = ""))
+          #guardamos el equipo local
+          local_cl <- c(local_cl,substr(fixtures_data_cl[j+1],1,str_locate(fixtures_data_cl[j+1],"-")[1]-2))
+          #guardamos el equipo visitante
+          visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[j+1],                                  str_locate(fixtures_data_cl[j+1],"-")[1]+2,str_length(fixtures_data_cl[j+1])))
+          #guardamos los goles que anotó el local ya en forma de entero
+          goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[j+2],1,1)))
+          #guardamos los goles que anotó el visitante ya en forma de entero
+          goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[j+2],3,3)))
+          #guardamos la probabilidad de victoria del local en forma de decimal
+          prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[j+5],1,2))/100)
+          #guardamos la probabilidad de empate en forma de decimal
+          prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[j+6],1,2))/100)
+          #guardamos la probabilidad de victoria del visitante en forma de decimal
+          prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[j+7],1,2))/100)
       }
     }
   }
 }
 
 #Empezamos el procedimiento para leer los datos de la apertura
+
 #Partidos de la jornada para la apertura
 jornadas_ap <- getNodeSet(apertura_2016, "//div[@class='fixtures_round']") %>% sapply(., xmlValue)
 #Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
@@ -471,6 +267,7 @@ for (k in 1:length(jornadas_ap)) {
 #con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
 #y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
 #útil y lo guardamos en un nuevo array
+
 #Array en donde vamos a guardar todo
 fixtures_data_ap <- NULL
 #Iniciamos el loop en donde vamos a guardar todos los datos
@@ -484,37 +281,96 @@ for (l in 1:length(fixtures_ap)) {
   }
 }
 
-#Empezamos el procedimiento para traernos las fechas de la apertura
+#Empezamos el procedimiento para traernos los datos de las jornadas de la apertura
 
 #Creamos el vector nulo que después guardará todas las fechas
 fechas_ap <- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_ap <- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_ap <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_ap <- NULL
+
 #Iniciamos el loop por todas las jornadas
 for (m in 1:length(fixtures_data_ap)) {
   #Primero nos fijamos en todas las jornadas menos en la 6
   if(fixtures_data_ap[m] == "Fixtures & Results Liga MX Apertura"){
-      #Queremos traernos las fechas las cuales empiezan en la posición 4 a partir de que inicia una jornada
-      #("Fixtures & Results Liga MX Apertura")
+      #Queremos traernos los datos de los partidos los cuales empiezan en la posición 4 
+      #a partir de que inicia una jornada ("Fixtures & Results Liga MX Apertura")
       inicio <- m + 4
-      #Después de la posición 4, cada 8 posiciones nos encontramos con una fecha (by=8) y son en 
-      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal
-      #por lo tanto son 8x8 = 64 posiciones las que recorremos en total
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato importante  (by=8) 
+      #y son en total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos 
+      #como tal, por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
       for (n in seq(inicio,(inicio + 64),by=8)) {
         #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
         #en formato yyyy-mm-dd
         fechas_ap <- c(fechas_ap,paste("2016-",substr(fixtures_data_ap[n],4,5),"-",substr(fixtures_data_ap[n],1,2),sep = ""))
+        #guardamos el equipo local
+        local_ap <- c(local_ap,substr(fixtures_data_ap[n+1],1,str_locate(fixtures_data_ap[n+1],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_ap <- c(visitante_ap,substr(fixtures_data_ap[n+1],                                  str_locate(fixtures_data_ap[n+1],"-")[1]+2,str_length(fixtures_data_ap[n+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_ap <- c(goles_local_ap,as.integer(substr(fixtures_data_ap[n+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_ap <- c(goles_visitante_ap,as.integer(substr(fixtures_data_ap[n+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_ap <- c(prob_local_ap,as.double(substr(fixtures_data_ap[n+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_ap <- c(prob_empate_ap,as.double(substr(fixtures_data_ap[n+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_ap <- c(prob_visitante_ap,as.double(substr(fixtures_data_ap[n+7],1,2))/100)
     }
   }
 }
 
-#Concatenamos todas las fechas para tener un solo vector de fechas
+#Empezamos a unir los datos recién obtenidos de la clausura y apertura para tener uno solo
+#para cada variable. Los nombramos igual que en el dataset liga_mx para unirlos
+
+#Concatenamos todas las fechas
 date <- c(fechas_cl,fechas_ap)
-print(date[1:30])
+#Concatenamos los nombres de los equipos locales
+team1 <- c(local_cl,local_ap)
+#Concatenamos los nombres de los equipos visitantes
+team2 <- c(visitante_cl,visitante_ap)
+#Concatenamos los goles anotados por los locales
+score1 <- c(goles_local_cl,goles_local_ap)
+#Concatenamos los goles anotados por los visitantes
+score2 <- c(goles_visitante_cl,goles_visitante_ap)
+#Concatenamos las probabilidades de victoria de los locales
+prob1 <- c(prob_local_cl,prob_local_ap)
+#Concatenamos las probabilidades de empate
+probtie <- c(prob_empate_cl,prob_empate_ap)
+#Concatenamos las probabilidades de victoria de los visitantes
+prob2 <- c(prob_visitante_cl,prob_visitante_ap)
 
-#Empezamos el proceso para obtener el nombre de los equipos para la clausura
+#con el propósito de unir estos resultados con la tabla liga_mx entonces se crearán 
+#vectores con nombres y valores similares a algunas ya en liga_mx para poder unirlos mejor
 
+#Vector que te dice la temporada (2016 y 2017)
+season <- c(rep(2016,length(local_cl)),rep(2017,length(local_ap)))
+#Vector que te dice el id del torneo
+league_id <- c(rep(1975,length(local_cl)),rep(1952,length(local_ap)))
+#Vector que te dice el nombre del torneo
+league <- c(rep("Mexican Primera Division Torneo Clausura",length(local_cl)),rep("Mexican Primera Division Torneo Apertura",length(local_ap)))
+
+#Armamos una tabla preeliminar de los datos obtenidos que se va a unir a liga_mx
+liga_mx_2 <- data.frame(season,date,league_id,league,team1,team2,prob1,prob2,probtie,score1,score2,stringsAsFactors = F)
+
+#spi1, spi2, proj_score1, proj_score2, importance1, importance2, xg1, xg2, nsxg1, nsxg2, 
+#adj_score1, adj_score2
+
+head(liga_mx_2,3)
 ```
 
-**Con lo de arriba se puede obtener todo y sustituir todo el proceso anterior por este nuevo** \n
 **Convertir todos los nombres de los equipos en liga_mx a character**
 
 Tal vez incluir el equipo campeón y subcampeón en nuevas columnas
