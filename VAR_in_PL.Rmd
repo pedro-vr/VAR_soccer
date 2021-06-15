@@ -1,0 +1,97 @@
+---
+title: "VAR in PL"
+author: "Pedro Alan Velázquez Romero"
+date: "5/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+#librerias a utilizar 
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
+            #       "urltools"))
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(httr)
+library(XML)
+library(rvest)
+library(xml2)
+library(tidyverse)
+library(robotstxt)
+library(urltools)
+library(XML)
+library(methods)
+```
+
+Esta es la primera versión del documento en donde se harán los cálculos para el análisis del VAR en el fútbol. A partir de aquí se va a empezar con un análisis descriptivo de los datos, además de reconocer los datos verdaderamente valiosos con los que se trabajará.
+
+El primer acercamiento por supuesto es sobre el VAR como nueva medida en el fútbol, de aquí que sale el repentino interés de querer saber lo siguiente:
+
+1. En qué fecha se implementó el VAR? A partir de ahí podemos hacer comparaciones entre métricas de equipos antes y después del VAR
+2. Si se puede conseguir datos del VAR en la PL entonces también podemos comparar el efecto del VAR junto al efecto que trajo consigo la pandemia del COVID-19.
+
+Implementación del VAR en la PL: **2018 empieza como piloto, se implementó en 2019 de manera oficial**
+
+Propuestas de métricas para medir la ineficiencia/eficiencia del VAR (Arturo Brizio, presidente de la Comisión de Árbitros en México):
+
+1. La unificación de procedimientos
+2. La línea de intervención (equilibrio entre poco y nunca, solamente when necessary)
+3. Tiempo de revisión (el promedio hasta marzo 2021 es de 1.5 mins, el máximo es 9 mins)
+4. Medidas PEGII: Penal, Expulsión, Gol, Identidad errónea e Incidente no visto por el árbitro
+
+Esta criteria trasladada en la PL varia un poco debido a que en esa liga se toman en cuenta más variables, la referencia de esto es el siguiente link proveniente de la página oficial de la PL: https://www.premierleague.com/news/1293321
+
+Fuente: https://www.marca.com/claro-mx/futbol/liga-mx/2021/03/25/605cfb42ca4741d5138b4612.html
+
+VAR definición: https://www.marca.com/claro-mx/futbol/liga-mx/2018/10/18/5bc8a11a268e3ebb268b45ce.html
+
+
+Si obtenemos el documento directamente de la página de GitHub de FiveThirtyEight se tienen los partidos actualizados al día.
+
+```{r}
+#al parecer aquí ya se encuentran desde 2016 hasta hoy, se actualiza cada semana
+url <- "https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv"
+football_matches <- read.csv(url,fileEncoding = 'UTF-8',skipNul = T)
+premier_league <- filter(football_matches,league == "Barclays Premier League")
+```
+
+En el caso de la PL, como se trata de torneos largos, aquí no se mete la variable de una "liguilla" a comparación con la liga de México. Aquí se toman en cuenta todos los partidos y lo que cambian son los ascendidos y descendidos en cada temporada.
+
+Aquí se considerarán dos nuevas variables, a saber, las siguientes:
+
+- after_covid: flag que denota si el partido se jugó en pandemia o pre-pandemia. La PL se suspendió un 13 de marzo de 2020 según ESPN
+- is_VAR: flag que denota si en el partido ya está implemnentado el VAR o no. EL VAR se implementó en la PL a partir de la temporada 19/20, es decir, a partir del 9 de agosto de 2019.
+
+```{r}
+#Creamos otra variable para determinar en qué momento inició COVID
+premier_league <- premier_league %>% mutate(after_covid = if_else(as.POSIXct(date) > as.POSIXct('2020-03-13'),1,0))
+#Creamos la variable que nos indica si en el partido estuvo presente el VAR
+premier_league <- premier_league %>% mutate(is_VAR = if_else(as.POSIXct(date) > as.POSIXct('2019-08-08'),1,0))
+```
+
+```{r,include=FALSE}
+head(premier_league,3)
+arrange(premier_league,desc(date))
+arrange(premier_league,date)
+```
+
+```{r}
+head(premier_league,3)
+```
+
+Se cuenta con un archivo en donde se denotan las intervenciones del VAR en la PL de la temporada 19/20 (la primera temporada en que se implementó) y se va a hacer un data set de esos records a continuación.
+
+```{r}
+#Leemos primero todo el archivo html de la temporada 19/20
+VAR_19_20 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_19-20.html")
+#Leemos primero todo el archivo html de la temporada 20/21
+VAR_20_21 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_20-21.html")
+```
+
+De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
+
+**Tal vez agregar al campeón de cada temporada, nos podría servir como indicador de algo en cuanto a métricas**
