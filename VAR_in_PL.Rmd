@@ -66,7 +66,7 @@ Aquí se considerarán dos nuevas variables, a saber, las siguientes:
 - after_covid: flag que denota si el partido se jugó en pandemia o pre-pandemia. La PL se suspendió un 13 de marzo de 2020 según ESPN
 - is_VAR: flag que denota si en el partido ya está implemnentado el VAR o no. EL VAR se implementó en la PL a partir de la temporada 19/20, es decir, a partir del 9 de agosto de 2019.
 
-```{r}
+```{r,include=FALSE}
 #Creamos otra variable para determinar en qué momento inició COVID
 premier_league <- premier_league %>% mutate(after_covid = if_else(as.POSIXct(date) > as.POSIXct('2020-03-13'),1,0))
 #Creamos la variable que nos indica si en el partido estuvo presente el VAR
@@ -85,11 +85,189 @@ head(premier_league,3)
 
 Se cuenta con un archivo en donde se denotan las intervenciones del VAR en la PL de la temporada 19/20 (la primera temporada en que se implementó) y se va a hacer un data set de esos records a continuación.
 
-```{r}
+```{r,include=FALSE}
+#Empezamos el proceso para obtener los datos de las intervenciones del VAR en temporadas 19/20 y 20/21 de la PL
+
 #Leemos primero todo el archivo html de la temporada 19/20
 VAR_19_20 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_19-20.html")
 #Leemos primero todo el archivo html de la temporada 20/21
 VAR_20_21 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_20-21.html")
+
+#Nos traemos las tablas de overturns del VAR hacia todos los equipos para la 19/20, los cuales sabemos que están en los nodos de la forma <aside class = "inline editorial float-r">
+var_overturns_19_20 <- getNodeSet(VAR_19_20, "//aside[@class='inline editorial float-r']") %>% sapply(., xmlValue)
+#Nos traemos las tablas de overturns del VAR hacia todos los equipos para la 20/21, los cuales sabemos que están en los nodos de la forma <aside class = "inline editorial float-r">
+var_overturns_20_21 <- getNodeSet(VAR_20_21, "//aside[@class='inline editorial float-r']") %>% sapply(., xmlValue)
+
+#Nos traemos los nombres de los equipos de la PL de la 19/20 con sus puntos a favor o en contra a raíz de decisiones del VAR (netscore), los cuales sabemos que están en nodos de la forma <h2>
+teams_19_20 <- getNodeSet(VAR_19_20, "//h2") %>% sapply(., xmlValue)
+#Nos traemos los nombres de los equipos de la PL de la 20/21 con sus puntos a favor o en contra a raíz de decisiones del VAR (netscore), los cuales sabemos que están en nodos de la forma <h2>
+teams_20_21 <- getNodeSet(VAR_20_21, "//h2") %>% sapply(., xmlValue)
+
+#Nos traemos el detalle de las decisiones del VAR por cada equipo de la 19/20, los cuales sabemos que están en nodos del tipo <p>
+details_var_19_20 <- getNodeSet(VAR_19_20, "//p") %>% sapply(., xmlValue)
+#Nos traemos el detalle de las decisiones del VAR por cada equipo de la 20/21, los cuales sabemos que están en nodos del tipo <p>
+details_var_20_21 <- getNodeSet(VAR_20_21, "//p") %>% sapply(., xmlValue)
+
+#Empezamos a tratar con los datos obtenidos arriba para solo quedarnos con la info importante
+
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+ovrt_19_20 <- NULL
+#Vamos a hacer un loop para guardar los datos acerca de los overturns de los equipos de la 19/20
+for (a in 1:length(var_overturns_19_20)) {
+  #Guardamos cada jornada como una matriz
+  ovrt_19_20 <- c(ovrt_19_20,str_split(var_overturns_19_20[a],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todos los equipos de la 19/20, ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+
+#Array en donde vamos a guardar todo
+ovrt_data_19_20 <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (b in 1:length(ovrt_19_20)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(ovrt_19_20[b])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    ovrt_data_19_20 <- c(ovrt_data_19_20,data_trim)
+  }
+}
+
+#Hacemos el mismo proceso para los datos de la 20/21
+
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+ovrt_20_21 <- NULL
+#Vamos a hacer un loop para guardar los datos acerca de los overturns de los equipos de la 20/21
+for (c in 1:length(var_overturns_20_21)) {
+  #Guardamos cada jornada como una matriz
+  ovrt_20_21 <- c(ovrt_20_21,str_split(var_overturns_20_21[c],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todos los equipos de la 20/21, ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+
+#Array en donde vamos a guardar todo
+ovrt_data_20_21 <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (d in 1:length(ovrt_20_21)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(ovrt_20_21[d])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    ovrt_data_20_21 <- c(ovrt_data_20_21,data_trim)
+  }
+}
+
+#Empezamos a guardar los datos de los overturns en vectores separados para después unirlos en un dataset
+ovrt_data_19_20 <- ovrt_data_19_20[1:123]
+
+#Empezamos el loop para los datos de los equipos de ambas temporadas
+
+#Creamos un array para meter los equipos de la temporada 19/20 para cada tipo de overturn
+teams_ovrt_19_20 <- NULL
+#Creamos un array para meter los puntos a favor o en contra de cada equipo de la 19/20 por cada tipo de 
+#overturn
+ovrt_points_19_20 <- NULL
+#Creamos un array para meter los equipos de la temporada 20/21 para cada tipo de overturn
+teams_ovrt_20_21 <- NULL
+#Creamos un array para meter los puntos a favor o en contra de cada equipo de la 20/21 por cada tipo de 
+#overturn
+ovrt_points_20_21 <- NULL
+#Creamos un contador para saber si estamos en los primeros 20 overturns, ya que esos primeros 20
+#tienen un signo positivo o negativo al principio que debemos quitar
+contador_ovrt <- 0
+#Empezamos el loop con la longitud de la 19/20 y como ambos tienen la misma longitud esto no 
+#importa mucho
+for (e in 1:length(ovrt_data_19_20)) {
+  #Nos fijamos si la entrada es el título del tipo de overturn, este siempre inicia con la palabra "VAR"
+  if (substr(ovrt_data_19_20[e],1,3) == "VAR") {
+    #Si estamos en el título del tipo de overturn, entonces sabemos que son 20 equipos por lo tanto
+    #hacemos el loop recorriendo los 20 equipos de 2 en 2 que es donde están los equipos
+    for(f in seq(e+1,e+39,by=2)){
+      #Aumentamos el contador para fijarnos si son los primeros 20
+      contador_ovrt <- contador_ovrt + 1
+      #Nos fijamos si son los primeros 20 equipos
+      if(contador_ovrt <= 20){
+        #Si si estamos con los primeros 20 entonces ahora nos fijamos el tipo de signo 
+        #que tiene el numero (+,-)
+        if(substr(ovrt_data_19_20[f+1],1,1) == "+"){
+          #Si el signo es + entonces nos traemos el puro número
+          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],2,2)))
+        } else if (substr(ovrt_data_19_20[f+1],1,1) == "-"){
+          #Si el signo es - entonces nos traemos el número en negativo
+          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],2,2))*(-1))
+        } else {
+          #Si no trae signo entonces es el 0 y nos lo traemos tal cual
+          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],1,1)))
+        }
+        #en este loop solo lidiamos con los signos de los equipos de la temporada 19/20 por lo tanto
+        #las primeras 20 entradas del vector para la temporada 20/21 los dejamos en 0
+        ovrt_points_20_21 <- c(ovrt_points_20_21,0)
+      } else {
+        #Si ya pasamos los primeros 20 entonces ya nos traemos el puro número, estos ya no tienen signo
+        #y aquí si guardamos para ambas tenporadas
+        ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(ovrt_data_19_20[f+1]))
+        ovrt_points_20_21 <- c(ovrt_points_20_21,as.integer(ovrt_data_20_21[f+1]))
+      }
+      #Después de guardar los puntos guardamos el nombre de los equipos para ambas temporadas
+      teams_ovrt_19_20 <- c(teams_ovrt_19_20,ovrt_data_19_20[f])
+      teams_ovrt_20_21 <- c(teams_ovrt_20_21,ovrt_data_20_21[f])
+    }
+  }
+}
+
+#Como los primeros 20 puntos no coinciden necesariamente entre ambas temporadas en cuanto signo entonces
+#tratamos aquí los primeros 20 puntos de la temporada 20/21
+
+#Creamos un indice el cual nos servirá para saber en que entrada del vector ya creado para la 20/21
+#guardar el respectivo punto positivo, negativo o cero
+index_20_21 <- 0
+#empezamos el loop dentro del vector de datos de la 20/21 para obtener los primeros 20 puntos
+for(g in 1:length(ovrt_data_20_21)){
+  #Queremos solamente los puntos del tipo net score
+  if (ovrt_data_20_21[g] == "VAR overturns (net score)"){
+    #Son 20 equipos por lo tanto recorremos el vector solo los primeros 20 de dos en dos a partir 
+    #del inicio del overturn más dos lugares
+    for(h in seq(g+2,g+40,by=2)){
+      #Aumentamos el índice para ir recorriendo los primeros 20 lugares del vector de puntos 
+      #para la 20/21
+      index_20_21 <- index_20_21 + 1
+      if(substr(ovrt_data_20_21[h],1,1) == "+")
+        #Si el signo es + entonces nos traemos el puro número
+        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],2,2))
+      else if(substr(ovrt_data_20_21[h],1,1) == "-")
+        #Si el signo es - entonces nos traemos el puro número en forma negativa
+        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],2,2))*(-1)
+      else
+        #Si no tiene signo entonces es el cero y nos lo traemos tal cual
+        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],1,1))
+    }
+  }
+}
+
+#Vamos a guardar estos tres tipos de overturn en un tres tablas diferntes para cada temporada y así después unirlos en uno solo
+
+#Tabla para el overturn "net score"
+ns_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[1:20],teams_ovrt_20_21[1:20]), "net_score" = c(ovrt_points_19_20[1:20],ovrt_points_20_21[1:20]))
+#Tabla para el overturn "decisions for"
+desfor_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[21:40],teams_ovrt_20_21[21:40]), "desicions_for" = c(ovrt_points_19_20[21:40],ovrt_points_20_21[21:40]))
+#Tabla para el overturn "decisions against"
+desagnst_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[41:60],teams_ovrt_20_21[41:60]), "desicions_against" = c(ovrt_points_19_20[41:60],ovrt_points_20_21[41:60]))
+#unimos las tres tablas en una sola basado en la temporada y nombre de equipo
+ovrt_df <- inner_join(ns_df,desfor_df,by=c("season","team")) %>% inner_join(.,desagnst_df,by=c("season","team"))
+
+#Empezamos el proceso para traernos la descripciones de decisiones del VAR
+
+```
+
+```{r}
+ovrt_df
 ```
 
 De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
