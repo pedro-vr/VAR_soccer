@@ -397,32 +397,66 @@ premier_league &lt;- filter(football_matches,league == &quot;Barclays Premier Le
 <li>after_covid: flag que denota si el partido se jugó en pandemia o pre-pandemia. La PL se suspendió un 13 de marzo de 2020 según ESPN</li>
 <li>is_VAR: flag que denota si en el partido ya está implemnentado el VAR o no. EL VAR se implementó en la PL a partir de la temporada 19/20, es decir, a partir del 9 de agosto de 2019.</li>
 </ul>
-<pre class="r"><code>#Creamos otra variable para determinar en qué momento inició COVID
-premier_league &lt;- premier_league %&gt;% mutate(after_covid = if_else(as.POSIXct(date) &gt; as.POSIXct('2020-03-13'),1,0))
-#Creamos la variable que nos indica si en el partido estuvo presente el VAR
-premier_league &lt;- premier_league %&gt;% mutate(is_VAR = if_else(as.POSIXct(date) &gt; as.POSIXct('2019-08-08'),1,0))</code></pre>
 <pre class="r"><code>head(premier_league,3)</code></pre>
 <pre><code>##   season       date league_id                  league          team1
 ## 1   2016 2016-08-13      2411 Barclays Premier League      Hull City
 ## 2   2016 2016-08-13      2411 Barclays Premier League Crystal Palace
-## 3   2016 2016-08-13      2411 Barclays Premier League  Middlesbrough
+## 3   2016 2016-08-13      2411 Barclays Premier League        Everton
 ##                  team2  spi1  spi2  prob1  prob2 probtie proj_score1
 ## 1       Leicester City 53.57 66.81 0.3459 0.3621  0.2921        1.16
 ## 2 West Bromwich Albion 55.19 58.66 0.4214 0.2939  0.2847        1.35
-## 3           Stoke City 56.32 60.35 0.4380 0.2692  0.2927        1.30
+## 3    Tottenham Hotspur 68.02 73.25 0.3910 0.3401  0.2689        1.47
 ##   proj_score2 importance1 importance2 score1 score2  xg1  xg2 nsxg1 nsxg2
 ## 1        1.24        38.1        22.2      2      1 0.85 2.77  0.17  1.25
 ## 2        1.14        43.6        34.6      0      1 1.11 0.68  0.84  1.60
-## 3        1.01        33.9        32.5      1      1 1.40 0.55  1.13  1.06
+## 3        1.38        31.9        48.0      1      1 0.73 1.11  0.88  1.81
 ##   adj_score1 adj_score2 after_covid is_VAR
 ## 1       2.10       1.05           0      0
 ## 2       0.00       1.05           0      0
 ## 3       1.05       1.05           0      0</code></pre>
 <p>Se cuenta con un archivo en donde se denotan las intervenciones del VAR en la PL de la temporada 19/20 (la primera temporada en que se implementó) y se va a hacer un data set de esos records a continuación.</p>
-<pre class="r"><code>#Leemos primero todo el archivo html de la temporada 19/20
-VAR_19_20 &lt;- htmlParse(&quot;/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_19-20.html&quot;)
-#Leemos primero todo el archivo html de la temporada 20/21
-VAR_20_21 &lt;- htmlParse(&quot;/Users/pedrovela/Documentos/Git_repos/VAR_soccer/VAR_in_PL_20-21.html&quot;)</code></pre>
+<pre class="r"><code>ovrt_df</code></pre>
+<pre><code>##    season                   team net_score desicions_for desicions_against
+## 1   19/20 Brighton &amp; Hove Albion         8            10                 2
+## 2   19/20      Manchester United         7            10                 3
+## 3   19/20         Crystal Palace         4             8                 4
+## 4   19/20                Burnley         3             7                 4
+## 5   19/20              Newcastle         3             3                 0
+## 6   19/20            Southampton         3             8                 5
+## 7   19/20              Liverpool         2             5                 3
+## 8   19/20         Leicester City         1             8                 7
+## 9   19/20      Tottenham Hotspur         1             8                 7
+## 10  19/20        Manchester City         0             8                 8
+## 11  19/20                Arsenal        -1             4                 5
+## 12  19/20                Everton        -1             3                 4
+## 13  19/20        AFC Bournemouth        -2             5                 7
+## 14  19/20                Chelsea        -2             5                 7
+## 15  19/20                Watford        -2             2                 4
+## 16  19/20            Aston Villa        -3             2                 5
+## 17  19/20               West Ham        -4             6                10
+## 18  19/20       Sheffield United        -5             3                 8
+## 19  19/20                 Wolves        -5             2                 7
+## 20  19/20           Norwich City        -7             2                 9
+## 21  20/21                Burnley         4             5                 1
+## 22  20/21                Everton         4             6                 2
+## 23  20/21                Chelsea         3             8                 5
+## 24  20/21                 Fulham         3             9                 6
+## 25  20/21       Sheffield United         3             7                 4
+## 26  20/21            Aston Villa         2             7                 5
+## 27  20/21         Leicester City         2             9                 7
+## 28  20/21 Brighton &amp; Hove Albion         1             9                 8
+## 29  20/21         Crystal Palace         1             6                 5
+## 30  20/21                  Leeds         1             5                 4
+## 31  20/21        Manchester City         1             5                 4
+## 32  20/21      Manchester United         0             9                 9
+## 33  20/21              Newcastle         0             5                 5
+## 34  20/21            Southampton         0             7                 7
+## 35  20/21               West Ham        -1             5                 6
+## 36  20/21      Tottenham Hotspur        -3             7                10
+## 37  20/21                 Wolves        -3             4                 7
+## 38  20/21                Arsenal        -6             3                 9
+## 39  20/21              Liverpool        -6             7                13
+## 40  20/21              West Brom        -6             3                 9</code></pre>
 <p>De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.</p>
 <p><strong>Tal vez agregar al campeón de cada temporada, nos podría servir como indicador de algo en cuanto a métricas</strong></p>
 
