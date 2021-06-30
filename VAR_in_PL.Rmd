@@ -194,18 +194,8 @@ for (e in 1:length(ovrt_data_19_20)) {
       contador_ovrt <- contador_ovrt + 1
       #Nos fijamos si son los primeros 20 equipos
       if(contador_ovrt <= 20){
-        #Si si estamos con los primeros 20 entonces ahora nos fijamos el tipo de signo 
-        #que tiene el numero (+,-)
-        if(substr(ovrt_data_19_20[f+1],1,1) == "+"){
-          #Si el signo es + entonces nos traemos el puro número
-          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],2,2)))
-        } else if (substr(ovrt_data_19_20[f+1],1,1) == "-"){
-          #Si el signo es - entonces nos traemos el número en negativo
-          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],2,2))*(-1))
-        } else {
-          #Si no trae signo entonces es el 0 y nos lo traemos tal cual
-          ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(substr(ovrt_data_19_20[f+1],1,1)))
-        }
+        #Nos traemos los puntos con el signo adecuado ya en entero
+        ovrt_points_19_20 <- c(ovrt_points_19_20,as.integer(ovrt_data_19_20[f+1]))
         #en este loop solo lidiamos con los signos de los equipos de la temporada 19/20 por lo tanto
         #las primeras 20 entradas del vector para la temporada 20/21 los dejamos en 0
         ovrt_points_20_21 <- c(ovrt_points_20_21,0)
@@ -238,36 +228,151 @@ for(g in 1:length(ovrt_data_20_21)){
       #Aumentamos el índice para ir recorriendo los primeros 20 lugares del vector de puntos 
       #para la 20/21
       index_20_21 <- index_20_21 + 1
-      if(substr(ovrt_data_20_21[h],1,1) == "+")
-        #Si el signo es + entonces nos traemos el puro número
-        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],2,2))
-      else if(substr(ovrt_data_20_21[h],1,1) == "-")
-        #Si el signo es - entonces nos traemos el puro número en forma negativa
-        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],2,2))*(-1)
-      else
-        #Si no tiene signo entonces es el cero y nos lo traemos tal cual
-        ovrt_points_20_21[index_20_21] <- as.integer(substr(ovrt_data_20_21[h],1,1))
+      #Nos traemos los puntos con el signo adecuado ya en entero
+      ovrt_points_20_21[index_20_21] <- as.integer(ovrt_data_20_21[h])
     }
   }
 }
 
 #Vamos a guardar estos tres tipos de overturn en un tres tablas diferntes para cada temporada y así después unirlos en uno solo
 
+#ns = net score
+#df = decisions for
+#da = decisions against
+
 #Tabla para el overturn "net score"
-ns_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[1:20],teams_ovrt_20_21[1:20]), "net_score" = c(ovrt_points_19_20[1:20],ovrt_points_20_21[1:20]))
+ns_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[1:20],teams_ovrt_20_21[1:20]), "ns" = c(ovrt_points_19_20[1:20],ovrt_points_20_21[1:20]))
 #Tabla para el overturn "decisions for"
-desfor_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[21:40],teams_ovrt_20_21[21:40]), "desicions_for" = c(ovrt_points_19_20[21:40],ovrt_points_20_21[21:40]))
+desfor_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[21:40],teams_ovrt_20_21[21:40]), "df" = c(ovrt_points_19_20[21:40],ovrt_points_20_21[21:40]))
 #Tabla para el overturn "decisions against"
-desagnst_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[41:60],teams_ovrt_20_21[41:60]), "desicions_against" = c(ovrt_points_19_20[41:60],ovrt_points_20_21[41:60]))
+desagnst_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" = c(teams_ovrt_19_20[41:60],teams_ovrt_20_21[41:60]), "da" = c(ovrt_points_19_20[41:60],ovrt_points_20_21[41:60]))
 #unimos las tres tablas en una sola basado en la temporada y nombre de equipo
 ovrt_df <- inner_join(ns_df,desfor_df,by=c("season","team")) %>% inner_join(.,desagnst_df,by=c("season","team"))
-
-#Empezamos el proceso para traernos la descripciones de decisiones del VAR
-
 ```
 
 ```{r}
 ovrt_df
+```
+
+Iniciamos el proceso para obtener la descripción de las decisiones del VAR en los partidos de la Premier League en las temporadas 19/20 y 20/21
+
+```{r,include=FALSE}
+#Empezamos a tratar con los datos obtenidos sobre los detalles del VAR en cada partido de la PL y entonces
+#solo quedarnos con la info importante
+
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+details_19_20 <- NULL
+#Vamos a hacer un loop para guardar los datos acerca de las intervenciones del VAR de la 19/20
+for (i in 1:length(details_var_19_20)) {
+  #Guardamos cada dato como una matriz
+  details_19_20 <- c(details_19_20,str_split(details_var_19_20[i],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todos los partidos de la 19/20, ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+
+#Array en donde vamos a guardar todo
+details_data_19_20 <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (j in 1:length(details_19_20)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(details_19_20[j])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    details_data_19_20 <- c(details_data_19_20,data_trim)
+  }
+}
+
+#Hacemos el mismo proceso para los datos de la 20/21
+
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+details_20_21 <- NULL
+#Vamos a hacer un loop para guardar los datos acerca de los partidos de los equipos de la 20/21
+for (k in 1:length(details_var_20_21)) {
+  #Guardamos cada dato como una matriz
+  details_20_21 <- c(details_20_21,str_split(details_var_20_21[k],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todos los partidos de la 20/21, ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+
+#Array en donde vamos a guardar todo
+details_data_20_21 <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (l in 1:length(details_20_21)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(details_20_21[l])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    details_data_20_21 <- c(details_data_20_21,data_trim)
+  }
+}
+
+#Ahora que ya tenemos los datos "útiles" entonces empezamos a guardar los datos en vectores 
+
+#Empezamos el proceso para traernos la descripciones de decisiones del VAR
+
+des_19_20 <- NULL
+
+for (m in 1:length(details_data_19_20)) {
+  if(details_data_19_20[m] == "Overturns:"){
+    for (n in seq(m+1,m+17,by=2)) {
+      des_19_20 <- c(des_19_20,details_data_19_20[n])
+    }
+  }
+}
+
+overturns_19_20 <- NULL
+#leading goals for
+lgf_19_20 <- NULL
+#disallowed goals for
+dgf_19_20 <- NULL
+#leading goals against
+lga_19_20 <- NULL
+#disallowed goals against
+dga_19_20 <- NULL
+#net goal score
+ngs_19_20 <- NULL
+#subjective decisions for
+sdf_19_20 <- NULL
+#subjective decisions against
+sda_19_20 <- NULL
+#net subjective score
+nsc_19_20 <- NULL
+
+for (o in seq(1,9*19+1,by=9)) {
+  overturns_19_20 <- c(overturns_19_20,as.integer(des_19_20[o]))
+  lgf_19_20 <- c(lgf_19_20,as.integer(des_19_20[o+1]))
+  dgf_19_20 <- c(dgf_19_20,as.integer(des_19_20[o+2]))
+  lga_19_20 <- c(lga_19_20,as.integer(des_19_20[o+3]))
+  dga_19_20 <- c(dga_19_20,as.integer(des_19_20[o+4]))
+  ngs_19_20 <- c(ngs_19_20,as.integer(des_19_20[o+5]))
+  sdf_19_20 <- c(sdf_19_20,as.integer(des_19_20[o+6]))
+  sda_19_20 <- c(sda_19_20,as.integer(des_19_20[o+7]))
+  nsc_19_20 <- c(nsc_19_20,as.integer(des_19_20[o+8]))
+}
+
+des_df <- data.frame("season" = rep("19/20",20),"team" = teams_ovrt_19_20[1:20],"ovrt" = overturns_19_20,
+                     "lgf" = lgf_19_20,"dgf" = dgf_19_20,"lga" = lga_19_20,"dga" = dga_19_20,
+                     "ngs" = ngs_19_20,"sdf" = sdf_19_20,"sda" = sda_19_20,"nsc" = nsc_19_20)
+
+ovrt_df_2 <- left_join(ovrt_df,des_df,by=c("season","team"))
+```
+
+```{r}
+ovrt_df_2
+```
+
+```{r,include=FALSE}
+#Escribimos las tablas en archivos csv para no perderlos
+#write_csv(premier_league,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/premier_league.csv")
+#write_csv(ovrt_df,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns.csv")
 ```
 
 De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
