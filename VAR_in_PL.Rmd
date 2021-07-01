@@ -250,10 +250,6 @@ desagnst_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)), "team" 
 ovrt_df <- inner_join(ns_df,desfor_df,by=c("season","team")) %>% inner_join(.,desagnst_df,by=c("season","team"))
 ```
 
-```{r}
-ovrt_df
-```
-
 Iniciamos el proceso para obtener la descripción de las decisiones del VAR en los partidos de la Premier League en las temporadas 19/20 y 20/21
 
 ```{r,include=FALSE}
@@ -316,35 +312,76 @@ for (l in 1:length(details_20_21)) {
 
 #Ahora que ya tenemos los datos "útiles" entonces empezamos a guardar los datos en vectores 
 
-#Empezamos el proceso para traernos la descripciones de decisiones del VAR
+#Empezamos el proceso para traernos la descripciones de decisiones del VAR, primero vamos a obtener
+#más métricas relacionadas a los overturns de los equipos 
 
+#Creamos los vectores en donde vamos a guardar todos los valores numéricos de los overturns 
+#para todos los equipos en las dos temporadas
 des_19_20 <- NULL
+des_20_21 <- NULL
+
+#Iniciamos los loops en donde vamos a recorrer todos los datos de la página web y solo nos quedamos
+#con los valores numéricos, todo esto para las dos temporadas. Se hacen en dos loops diferentes 
+#porque el tamaño del vector es diferente entre ambas temporadas
 
 for (m in 1:length(details_data_19_20)) {
+  #los valores numéricos para cada equipo empiezan con los "Overturns"
   if(details_data_19_20[m] == "Overturns:"){
+    #si ya encontramos el "Overturn" entonces sabemos que después vienen 9 métricas y 
+    #son las que únicamente queremos guardar
     for (n in seq(m+1,m+17,by=2)) {
+      #Guardamos cada número en el vector
       des_19_20 <- c(des_19_20,details_data_19_20[n])
     }
   }
 }
 
+for (p in 1:length(details_data_20_21)) {
+  #los valores numéricos para cada equipo empiezan con los "Overturns"
+  if(details_data_20_21[p] == "Overturns:"){
+    #si ya encontramos el "Overturn" entonces sabemos que después vienen 9 métricas y 
+    #son las que únicamente queremos guardar
+    for (q in seq(p+1,p+17,by=2)) {
+      #Guardamos cada número en el vector
+      des_20_21 <- c(des_20_21,details_data_20_21[q])
+    }
+  }
+}
+
+#Ahora, tenemos el vector con los valores numéricos de todas las métricas en conjunto
+#sin separación, entonces creamos los vectores individuales de cada métrica para separar
+#los valores de cada uno. Esto aplica para ambas temporadas
+
+#Overturns totales del equipo
 overturns_19_20 <- NULL
+overturns_20_21 <- NULL
 #leading goals for
 lgf_19_20 <- NULL
+lgf_20_21 <- NULL
 #disallowed goals for
 dgf_19_20 <- NULL
+dgf_20_21 <- NULL
 #leading goals against
 lga_19_20 <- NULL
+lga_20_21 <- NULL
 #disallowed goals against
 dga_19_20 <- NULL
+dga_20_21 <- NULL
 #net goal score
 ngs_19_20 <- NULL
+ngs_20_21 <- NULL
 #subjective decisions for
 sdf_19_20 <- NULL
+sdf_20_21 <- NULL
 #subjective decisions against
 sda_19_20 <- NULL
+sda_20_21 <- NULL
 #net subjective score
 nsc_19_20 <- NULL
+nsc_20_21 <- NULL
+
+#ya que tenemos los vectores creados entonces recorremos el vector con todos los valores numéricos
+#y vamos guardando cada dato en su respectivo vector. Esto aplica para ambas temporadas
 
 for (o in seq(1,9*19+1,by=9)) {
   overturns_19_20 <- c(overturns_19_20,as.integer(des_19_20[o]))
@@ -356,23 +393,77 @@ for (o in seq(1,9*19+1,by=9)) {
   sdf_19_20 <- c(sdf_19_20,as.integer(des_19_20[o+6]))
   sda_19_20 <- c(sda_19_20,as.integer(des_19_20[o+7]))
   nsc_19_20 <- c(nsc_19_20,as.integer(des_19_20[o+8]))
+  overturns_20_21 <- c(overturns_20_21,as.integer(des_20_21[o]))
+  lgf_20_21 <- c(lgf_20_21,as.integer(des_20_21[o+1]))
+  dgf_20_21 <- c(dgf_20_21,as.integer(des_20_21[o+2]))
+  lga_20_21 <- c(lga_20_21,as.integer(des_20_21[o+3]))
+  dga_20_21 <- c(dga_20_21,as.integer(des_20_21[o+4]))
+  ngs_20_21 <- c(ngs_20_21,as.integer(des_20_21[o+5]))
+  sdf_20_21 <- c(sdf_20_21,as.integer(des_20_21[o+6]))
+  sda_20_21 <- c(sda_20_21,as.integer(des_20_21[o+7]))
+  nsc_20_21 <- c(nsc_20_21,as.integer(des_20_21[o+8]))
 }
 
-des_df <- data.frame("season" = rep("19/20",20),"team" = teams_ovrt_19_20[1:20],"ovrt" = overturns_19_20,
-                     "lgf" = lgf_19_20,"dgf" = dgf_19_20,"lga" = lga_19_20,"dga" = dga_19_20,
-                     "ngs" = ngs_19_20,"sdf" = sdf_19_20,"sda" = sda_19_20,"nsc" = nsc_19_20)
+#Ya que tenemos los vectores individuales de cada métrica entonces creamos la tabla de los 
+#equipos con estas nuevas métricas 
+des_df <- data.frame("season" = c(rep("19/20",20),rep("20/21",20)),
+                     "team" = c(teams_ovrt_19_20[1:20],teams_ovrt_20_21[1:20]),
+                     "ovrt" = c(overturns_19_20,overturns_20_21),
+                     "lgf" = c(lgf_19_20,lgf_20_21),"dgf" = c(dgf_19_20,dgf_20_21),
+                     "lga" = c(lga_19_20,lga_20_21),"dga" = c(dga_19_20,dga_20_21),
+                     "ngs" = c(ngs_19_20,ngs_20_21),"sdf" = c(sdf_19_20,sdf_20_21),
+                     "sda" = c(sda_19_20,sda_20_21),"nsc" = c(nsc_19_20,nsc_20_21))
 
-ovrt_df_2 <- left_join(ovrt_df,des_df,by=c("season","team"))
+#ya que tenemos la tabla creada la unimos con la primera que obtuvimos atrás para ampliar las métricas
+ovrt_var <- inner_join(ovrt_df,des_df,by=c("season","team"))
 ```
 
 ```{r}
-ovrt_df_2
+ovrt_var
+```
+
+Ya que tenemos la tabla con los overturns de cada equipo entonces obtenemos la descripción de cada intervención del VAR para cada equipo
+
+```{r,include=FALSE}
+#Empezamos con el proceso para obtener los detalles del VAR en ciertos partidos para cada equipo
+#de la PL durante las dos temporadas
+
+game_detail <- NULL
+incident_detail <- NULL
+aux <- NULL
+cuenta_equipo <- NULL
+
+for(s in 1:length(details_data_19_20)){
+  if(details_data_19_20[s] == "Overturns:")
+    aux <- c(aux,s)
+}
+
+aux <- c(aux,length(details_data_19_20))
+
+for(t in 1:(length(aux)-1)){
+  cont <- 0
+  for(u in seq(aux[t],aux[t+1])){
+    if(details_data_19_20[u] == "Incident:")
+      cont <- cont + 1
+  }
+  cuenta_equipo <- c(cuenta_equipo,cont)
+}
+
+for(r in 1:length(details_data_19_20)){
+  if(details_data_19_20[r] == "Game:"){
+    game_detail <- c(game_detail,details_data_19_20[r+1])
+  }
+  if(details_data_19_20[r] == "Incident:"){
+    incident_detail <- c(incident_detail,details_data_19_20[r+1])
+  }
+}
 ```
 
 ```{r,include=FALSE}
 #Escribimos las tablas en archivos csv para no perderlos
 #write_csv(premier_league,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/premier_league.csv")
 #write_csv(ovrt_df,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns.csv")
+#write_csv(ovrt_var,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns_var.csv")
 ```
 
 De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
