@@ -428,35 +428,144 @@ Ya que tenemos la tabla con los overturns de cada equipo entonces obtenemos la d
 #Empezamos con el proceso para obtener los detalles del VAR en ciertos partidos para cada equipo
 #de la PL durante las dos temporadas
 
-game_detail <- NULL
-incident_detail <- NULL
-aux <- NULL
-cuenta_equipo <- NULL
+game_detail_19_20 <- NULL
+game_detail_20_21 <- NULL
+incident_detail_19_20 <- NULL
+incident_detail_20_21 <- NULL
+aux_1 <- NULL
+aux_2 <- NULL
+cuenta_equipo_19_20 <- NULL
+cuenta_equipo_20_21 <- NULL
 
 for(s in 1:length(details_data_19_20)){
   if(details_data_19_20[s] == "Overturns:")
-    aux <- c(aux,s)
+    aux_1 <- c(aux_1,s)
+  else if(details_data_19_20[s] == "Game:")
+    game_detail_19_20 <- c(game_detail_19_20,details_data_19_20[s+1])
+  else if(details_data_19_20[s] == "Incident:")
+    incident_detail_19_20 <- c(incident_detail_19_20,details_data_19_20[s+1])
 }
 
-aux <- c(aux,length(details_data_19_20))
+for(z in 1:length(details_data_20_21)){
+  if(details_data_20_21[z] == "Overturns:")
+    aux_2 <- c(aux_2,z)
+  else if(details_data_20_21[z] == "Game:")
+    game_detail_20_21 <- c(game_detail_20_21,details_data_20_21[z+1])
+  else if(details_data_20_21[z] == "Incident:")
+    incident_detail_20_21 <- c(incident_detail_20_21,details_data_20_21[z+1])
+}
 
-for(t in 1:(length(aux)-1)){
+aux_1 <- c(aux_1,length(details_data_19_20))
+aux_2 <- c(aux_2,length(details_data_20_21))
+
+for(t in 1:(length(aux_1)-1)){
   cont <- 0
-  for(u in seq(aux[t],aux[t+1])){
+  #cont_1 <- 1
+  for(u in seq(aux_1[t],aux_1[t+1])){
     if(details_data_19_20[u] == "Incident:")
       cont <- cont + 1
+    #if(details_data_19_20[u] == "Incident:" & details_data_19_20[u+2] == "Incident:"){
+      
+    #} else {
+      
+    #}
   }
-  cuenta_equipo <- c(cuenta_equipo,cont)
+  cuenta_equipo_19_20 <- c(cuenta_equipo_19_20,cont)
 }
 
-for(r in 1:length(details_data_19_20)){
-  if(details_data_19_20[r] == "Game:"){
-    game_detail <- c(game_detail,details_data_19_20[r+1])
+for(r in 1:(length(aux_2)-1)){
+  cont <- 0
+  for(aa in seq(aux_2[r],aux_2[r+1])){
+    if(details_data_20_21[aa] == "Incident:")
+      cont <- cont + 1
   }
-  if(details_data_19_20[r] == "Incident:"){
-    incident_detail <- c(incident_detail,details_data_19_20[r+1])
+  cuenta_equipo_20_21 <- c(cuenta_equipo_20_21,cont)
+}
+
+teams_var_detail_19_20 <- NULL
+teams_var_detail_20_21 <- NULL 
+
+for(v in 1:length(cuenta_equipo_19_20)){
+  teams_var_detail_19_20 <- c(teams_var_detail_19_20,rep(teams_ovrt_19_20[v],cuenta_equipo_19_20[v]))
+  teams_var_detail_20_21 <- c(teams_var_detail_20_21,rep(teams_ovrt_20_21[v],cuenta_equipo_20_21[v]))
+}
+
+desc_incident_19_20 <- NULL
+desc_incident_20_21 <- NULL
+min_incident_19_20 <- NULL
+min_incident_20_21 <- NULL
+type_incident_19_20 <- NULL
+type_incident_20_21 <- NULL
+
+for(w in 1:length(incident_detail_19_20)){
+  coma_1 <- str_locate_all(incident_detail_19_20[w],",")
+  guion_1 <- str_locate_all(incident_detail_19_20[w],"-")
+  coma_2 <- coma_1[[1]][dim(coma_1[[1]])[1]]
+  guion_2 <- guion_1[[1]][dim(guion_1[[1]])[1]]
+  if(w == 84 | w == 113){
+    desc_incident_19_20 <- c(desc_incident_19_20,substr(incident_detail_19_20[w],1,guion_2-2))
+    type_incident_19_20 <- c(type_incident_19_20,substr(incident_detail_19_20[w],guion_2+2,
+                                                        str_length(incident_detail_19_20[w])))
+    min_incident_19_20 <- c(min_incident_19_20,"0")
+  } else {
+    desc_incident_19_20 <- c(desc_incident_19_20,substr(incident_detail_19_20[w],1,coma_2-1))
+    type_incident_19_20 <- c(type_incident_19_20,substr(incident_detail_19_20[w],guion_2+2,
+                                                        str_length(incident_detail_19_20[w])))
+    min_incident_19_20 <- c(min_incident_19_20,substr(incident_detail_19_20[w],coma_2+2,guion_2-2))
   }
 }
+
+for(ab in 1:length(incident_detail_20_21)){
+  coma_1 <- str_locate_all(incident_detail_20_21[ab],",")
+  guion_1 <- str_locate_all(incident_detail_20_21[ab],"-")
+  coma_2 <- coma_1[[1]][dim(coma_1[[1]])[1]]
+  guion_2 <- guion_1[[1]][dim(guion_1[[1]])[1]]
+  if(ab == 170){
+    desc_incident_20_21 <- c(desc_incident_20_21,incident_detail_20_21[ab])
+    type_incident_20_21 <- c(type_incident_20_21,"None")
+    min_incident_20_21 <- c(min_incident_20_21,"0")
+  } else if(ab == 3 | ab == 137){
+    desc_incident_20_21 <- c(desc_incident_20_21,substr(incident_detail_20_21[ab],1,guion_2-2))
+    type_incident_20_21 <- c(type_incident_20_21,substr(incident_detail_20_21[ab],guion_2+2,
+                                                          str_length(incident_detail_20_21[ab])))
+    min_incident_20_21 <- c(min_incident_20_21,"0")
+  } else {
+    desc_incident_20_21 <- c(desc_incident_20_21,substr(incident_detail_20_21[ab],1,coma_2-1))
+    type_incident_20_21 <- c(type_incident_20_21,substr(incident_detail_20_21[ab],guion_2+2,
+                                                          str_length(incident_detail_20_21[ab])))
+    min_incident_20_21 <- c(min_incident_20_21,substr(incident_detail_20_21[ab],coma_2+2,guion_2-2))
+  }
+}
+
+min_inc_19_20 <- NULL
+min_inc_20_21 <- NULL
+
+for (x in 1:length(min_incident_19_20)) {
+  espacio <- str_locate(min_incident_19_20[x]," ")[1]
+  if(x == 84 | x == 113)
+    min_inc_19_20 <- c(min_inc_19_20,0)
+  else
+    min_inc_19_20 <- c(min_inc_19_20,as.integer(substr(min_incident_19_20[x],1,espacio-3)))
+}
+
+for(ac in 1:length(min_incident_20_21)){
+  espacio <- str_locate(min_incident_20_21[ac]," ")[1]
+  if(ac == 170 | ac == 3 | ac == 137)
+    min_inc_20_21 <- c(min_inc_20_21,0)
+  else
+    min_inc_20_21 <- c(min_inc_20_21,as.integer(substr(min_incident_20_21[ac],1,espacio-3)))
+}
+
+var_details <- data.frame("season" = c(rep("19/20",length(incident_detail_19_20)),
+                                       rep("20/21",length(incident_detail_20_21))),
+                          "team" = c(teams_var_detail_19_20,teams_var_detail_20_21),
+                          "incident" = c(desc_incident_19_20,desc_incident_20_21),
+                          "type" = c(type_incident_19_20,type_incident_20_21),
+                          "min" = c(min_inc_19_20,min_inc_20_21))
+```
+
+```{r}
+head(var_details,3)
 ```
 
 ```{r,include=FALSE}
@@ -464,6 +573,7 @@ for(r in 1:length(details_data_19_20)){
 #write_csv(premier_league,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/premier_league.csv")
 #write_csv(ovrt_df,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns.csv")
 #write_csv(ovrt_var,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns_var.csv")
+#write_csv(var_details,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/var_details.csv")
 ```
 
 De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
