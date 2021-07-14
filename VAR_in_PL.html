@@ -389,8 +389,11 @@ summary {
 <p>Si obtenemos el documento directamente de la página de GitHub de FiveThirtyEight se tienen los partidos actualizados al día.</p>
 <pre class="r"><code>#al parecer aquí ya se encuentran desde 2016 hasta hoy, se actualiza cada semana
 url &lt;- &quot;https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv&quot;
-football_matches &lt;- read.csv(url,fileEncoding = 'UTF-8',skipNul = T)
-premier_league &lt;- filter(football_matches,league == &quot;Barclays Premier League&quot;)</code></pre>
+football_matches &lt;- read.csv(url,fileEncoding = 'UTF-8',skipNul = T)</code></pre>
+<pre><code>## Warning in scan(file = file, what = what, sep = sep, quote = quote, dec = dec, :
+## invalid input found on input connection 'https://projects.fivethirtyeight.com/
+## soccer-api/club/spi_matches.csv'</code></pre>
+<pre class="r"><code>premier_league &lt;- filter(football_matches,league == &quot;Barclays Premier League&quot;)</code></pre>
 <p>En el caso de la PL, como se trata de torneos largos, aquí no se mete la variable de una “liguilla” a comparación con la liga de México. Aquí se toman en cuenta todos los partidos y lo que cambian son los ascendidos y descendidos en cada temporada.</p>
 <p>Aquí se considerarán dos nuevas variables, a saber, las siguientes:</p>
 <ul>
@@ -398,22 +401,22 @@ premier_league &lt;- filter(football_matches,league == &quot;Barclays Premier Le
 <li>is_VAR: flag que denota si en el partido ya está implemnentado el VAR o no. EL VAR se implementó en la PL a partir de la temporada 19/20, es decir, a partir del 9 de agosto de 2019.</li>
 </ul>
 <pre class="r"><code>head(premier_league,3)</code></pre>
-<pre><code>##   season       date league_id                  league          team1
-## 1   2016 2016-08-13      2411 Barclays Premier League      Hull City
-## 2   2016 2016-08-13      2411 Barclays Premier League Crystal Palace
-## 3   2016 2016-08-13      2411 Barclays Premier League        Everton
-##                  team2  spi1  spi2  prob1  prob2 probtie proj_score1
-## 1       Leicester City 53.57 66.81 0.3459 0.3621  0.2921        1.16
-## 2 West Bromwich Albion 55.19 58.66 0.4214 0.2939  0.2847        1.35
-## 3    Tottenham Hotspur 68.02 73.25 0.3910 0.3401  0.2689        1.47
-##   proj_score2 importance1 importance2 score1 score2  xg1  xg2 nsxg1 nsxg2
-## 1        1.24        38.1        22.2      2      1 0.85 2.77  0.17  1.25
-## 2        1.14        43.6        34.6      0      1 1.11 0.68  0.84  1.60
-## 3        1.38        31.9        48.0      1      1 0.73 1.11  0.88  1.81
-##   adj_score1 adj_score2 after_covid is_VAR
-## 1       2.10       1.05           0      0
-## 2       0.00       1.05           0      0
-## 3       1.05       1.05           0      0</code></pre>
+<pre><code>##   season       date league_id                  league       team1
+## 1   2016 2016-08-13      2411 Barclays Premier League   Hull City
+## 2   2016 2016-08-13      2411 Barclays Premier League Southampton
+## 3   2016 2016-08-13      2411 Barclays Premier League     Burnley
+##            team2  spi1  spi2  prob1  prob2 probtie proj_score1 proj_score2
+## 1 Leicester City 53.57 66.81 0.3459 0.3621  0.2921        1.16        1.24
+## 2        Watford 69.49 59.33 0.5759 0.1874  0.2367        1.91        1.05
+## 3   Swansea City 58.98 59.74 0.4482 0.2663  0.2854        1.37        1.05
+##   importance1 importance2 score1 score2  xg1  xg2 nsxg1 nsxg2 adj_score1
+## 1        38.1        22.2      2      1 0.85 2.77  0.17  1.25       2.10
+## 2        34.1        30.7      1      1 1.05 0.22  1.52  0.41       1.05
+## 3        36.5        29.1      0      1 1.24 1.84  1.71  1.56       0.00
+##   adj_score2 after_covid is_VAR
+## 1       1.05           0      0
+## 2       1.05           0      0
+## 3       1.05           0      0</code></pre>
 <p>Se cuenta con un archivo en donde se denotan las intervenciones del VAR en la PL de la temporada 19/20 (la primera temporada en que se implementó) y se va a hacer un data set de esos records a continuación.</p>
 <p>Iniciamos el proceso para obtener la descripción de las decisiones del VAR en los partidos de la Premier League en las temporadas 19/20 y 20/21</p>
 <pre class="r"><code>ovrt_var</code></pre>
@@ -459,19 +462,1420 @@ premier_league &lt;- filter(football_matches,league == &quot;Barclays Premier Le
 ## 39  20/21              Liverpool -6  7 13   18   2   0   7   3   3  -7   3   6
 ## 40  20/21              West Brom -6  3  9   12   0   0   4   2  -2   1   6  -5</code></pre>
 <p>Ya que tenemos la tabla con los overturns de cada equipo entonces obtenemos la descripción de cada intervención del VAR para cada equipo</p>
-<pre class="r"><code>head(var_details,3)</code></pre>
-<pre><code>##   season                   team
-## 1  19/20 Brighton &amp; Hove Albion
-## 2  19/20 Brighton &amp; Hove Albion
-## 3  19/20 Brighton &amp; Hove Albion
-##                                                                                     incident
-## 1 Brighton goal for Leandro Trossard ruled out for offside by Dan Burn, who created the goal
-## 2                            Conor Hourihane goal ruled out for a foul by Wesley on Mat Ryan
-## 3        Penalty awarded (scored by Neil Maupay) for foul on Aaron Connolly by Michael Keane
-##      type min
-## 1 AGAINST  27
-## 2     FOR  42
-## 3     FOR  78</code></pre>
+<pre class="r"><code>var_details</code></pre>
+<pre><code>##     season                  team1                  team2 home.away     date
+## 1    19/20 Brighton &amp; Hove Albion               West Ham         H  Aug. 17
+## 2    19/20 Brighton &amp; Hove Albion            Aston Villa         A  Oct. 19
+## 3    19/20 Brighton &amp; Hove Albion                Everton         H  Oct. 26
+## 4    19/20 Brighton &amp; Hove Albion              Leicester         H  Nov. 23
+## 5    19/20 Brighton &amp; Hove Albion                Arsenal         A   Dec. 5
+## 6    19/20 Brighton &amp; Hove Albion       Sheffield United         H  Dec. 21
+## 7    19/20 Brighton &amp; Hove Albion       Sheffield United         H  Dec. 21
+## 8    19/20 Brighton &amp; Hove Albion              Tottenham         A  Dec. 26
+## 9    19/20 Brighton &amp; Hove Albion            Bournemouth         H  Dec. 28
+## 10   19/20 Brighton &amp; Hove Albion                Everton         A  Jan. 11
+## 11   19/20 Brighton &amp; Hove Albion               West Ham         A   Feb. 1
+## 12   19/20 Brighton &amp; Hove Albion                Burnley         A  July 26
+## 13   19/20      Manchester United                Arsenal         H Sept. 30
+## 14   19/20      Manchester United              Liverpool         H  Oct. 20
+## 15   19/20      Manchester United                Norwich         A  Oct. 27
+## 16   19/20      Manchester United                Norwich         A  Oct. 27
+## 17   19/20      Manchester United               Man City         A   Dec. 7
+## 18   19/20      Manchester United              Liverpool         A  Jan. 19
+## 19   19/20      Manchester United                Chelsea         A  Feb. 17
+## 20   19/20      Manchester United                Chelsea         A  Feb. 17
+## 21   19/20      Manchester United                Watford         H  Feb. 23
+## 22   19/20      Manchester United                Everton         A  March 1
+## 23   19/20      Manchester United              Tottenham         A  June 19
+## 24   19/20      Manchester United         Crystal Palace         A    July 
+## 25   19/20      Manchester United               West Ham         H  July 22
+## 26   19/20         Crystal Palace               West Ham         A   Oct. 5
+## 27   19/20         Crystal Palace                Arsenal         A  Oct. 27
+## 28   19/20         Crystal Palace                Arsenal         A  Oct. 27
+## 29   19/20         Crystal Palace              Liverpool         H  Nov. 23
+## 30   19/20         Crystal Palace            Southampton         A  Dec. 28
+## 31   19/20         Crystal Palace                Norwich         A   Jan. 1
+## 32   19/20         Crystal Palace                Arsenal         H  Jan. 11
+## 33   19/20         Crystal Palace        Manchester City         A  Jan. 18
+## 34   19/20         Crystal Palace       Sheffield United         H   Feb. 1
+## 35   19/20         Crystal Palace            Aston Villa         A  July 12
+## 36   19/20         Crystal Palace            Aston Villa         A  July 12
+## 37   19/20         Crystal Palace             Man United         H    July 
+## 38   19/20                Burnley            Aston Villa         A Sept. 28
+## 39   19/20                Burnley              Leicester         A  Oct. 21
+## 40   19/20                Burnley                Chelsea         H  Oct. 26
+## 41   19/20                Burnley               West Ham         H   Nov. 9
+## 42   19/20                Burnley                Watford         A  Nov. 23
+## 43   19/20                Burnley            Aston Villa         H   Jan. 1
+## 44   19/20                Burnley            Bournemouth         H  Feb. 22
+## 45   19/20                Burnley            Bournemouth         H  Feb. 22
+## 46   19/20                Burnley               Man City         A  June 22
+## 47   19/20                Burnley                Norwich         A  July 18
+## 48   19/20                Burnley               Brighton         H  July 26
+## 49   19/20              Newcastle       Sheffield United         A   Dec. 5
+## 50   19/20              Newcastle            Southampton         A  March 7
+## 51   19/20              Newcastle            Southampton         A  March 7
+## 52   19/20            Southampton       Sheffield United         A Sept. 14
+## 53   19/20            Southampton        AFC Bournemouth         H Sept. 20
+## 54   19/20            Southampton                 Wolves         A  Oct. 19
+## 55   19/20            Southampton              Leicester         H  Oct. 25
+## 56   19/20            Southampton               West Ham         H  Dec. 14
+## 57   19/20            Southampton         Crystal Palace         H  Dec. 28
+## 58   19/20            Southampton              Leicester         A  Jan. 11
+## 59   19/20            Southampton              Leicester         A  Jan. 11
+## 60   19/20            Southampton                 Wolves         H  Jan. 18
+## 61   19/20            Southampton              Newcastle         H  March 7
+## 62   19/20            Southampton              Newcastle         H  March 7
+## 63   19/20            Southampton            Bournemouth         A  July 19
+## 64   19/20            Southampton            Bournemouth         A  July 19
+## 65   19/20              Liverpool                Chelsea         A Sept. 22
+## 66   19/20              Liverpool             Man United         A  Oct. 20
+## 67   19/20              Liverpool         Crystal Palace         A  Nov. 23
+## 68   19/20              Liverpool                Watford         H  Dec. 14
+## 69   19/20              Liverpool                 Wolves         H  Dec. 29
+## 70   19/20              Liverpool                 Wolves         H  Dec. 29
+## 71   19/20              Liverpool             Man United         H  Jan. 19
+## 72   19/20              Liverpool               Man City         A   July 2
+## 73   19/20         Leicester City                 Wolves         H  Aug. 11
+## 74   19/20         Leicester City              Tottenham         H Sept. 21
+## 75   19/20         Leicester City              Tottenham         H Sept. 21
+## 76   19/20         Leicester City                Burnley         H  Oct. 21
+## 77   19/20         Leicester City            Southampton         A  Oct. 25
+## 78   19/20         Leicester City               Brighton         A  Nov. 23
+## 79   19/20         Leicester City                Everton         H   Dec. 1
+## 80   19/20         Leicester City                Everton         H   Dec. 1
+## 81   19/20         Leicester City            Southampton         H  Jan. 11
+## 82   19/20         Leicester City            Southampton         H  Jan. 11
+## 83   19/20         Leicester City                 Wolves         A  Feb. 14
+## 84   19/20         Leicester City               Man City         H  Feb. 22
+## 85   19/20         Leicester City                Norwich         A  Feb. 28
+## 86   19/20         Leicester City                Everton         A   July 1
+## 87   19/20         Leicester City                Arsenal         A   July 7
+## 88   19/20      Tottenham Hotspur               Man City         A  Aug. 17
+## 89   19/20      Tottenham Hotspur              Leicester         A Sept. 21
+## 90   19/20      Tottenham Hotspur              Leicester         A Sept. 21
+## 91   19/20      Tottenham Hotspur       Sheffield United         H   Nov. 9
+## 92   19/20      Tottenham Hotspur               West Ham         A  Nov. 23
+## 93   19/20      Tottenham Hotspur                Chelsea         H  Dec. 22
+## 94   19/20      Tottenham Hotspur                Chelsea         H  Dec. 22
+## 95   19/20      Tottenham Hotspur               Brighton         H  Dec. 26
+## 96   19/20      Tottenham Hotspur                Norwich         A  Dec. 28
+## 97   19/20      Tottenham Hotspur        Manchester City         H   Feb. 2
+## 98   19/20      Tottenham Hotspur            Aston Villa         A  Feb. 16
+## 99   19/20      Tottenham Hotspur             Man United         H  June 19
+## 100  19/20      Tottenham Hotspur               West Ham         H  June 23
+## 101  19/20      Tottenham Hotspur       Sheffield United         A   July 2
+## 102  19/20      Tottenham Hotspur        AFC Bournemouth         A   July 9
+## 103  19/20        Manchester City               West Ham         A  Aug. 10
+## 104  19/20        Manchester City               West Ham         A  Aug. 10
+## 105  19/20        Manchester City              Tottenham         A  Aug. 17
+## 106  19/20        Manchester City             Man United         H   Dec. 7
+## 107  19/20        Manchester City                 Wolves         A  Dec. 27
+## 108  19/20        Manchester City                 Wolves         A  Dec. 27
+## 109  19/20        Manchester City       Sheffield United         H  Dec. 29
+## 110  19/20        Manchester City                Everton         H   Jan. 1
+## 111  19/20        Manchester City         Crystal Palace         H  Jan. 18
+## 112  19/20        Manchester City              Tottenham         A   Feb. 2
+## 113  19/20        Manchester City              Leicester         A  Feb. 22
+## 114  19/20        Manchester City                Burnley         H  June 22
+## 115  19/20        Manchester City                Chelsea         A  June 25
+## 116  19/20        Manchester City              Liverpool         H   July 2
+## 117  19/20        Manchester City               Man City         A  July 15
+## 118  19/20        Manchester City                Norwich         H  July 26
+## 119  19/20                Arsenal             Man United         A Sept. 30
+## 120  19/20                Arsenal         Crystal Palace         H  Oct. 27
+## 121  19/20                Arsenal         Crystal Palace         H  Oct. 27
+## 122  19/20                Arsenal                Norwich         A   Dec. 1
+## 123  19/20                Arsenal               Brighton         H   Dec. 5
+## 124  19/20                Arsenal         Crystal Palace         A  Jan. 11
+## 125  19/20                Arsenal               West Ham         H  March 7
+## 126  19/20                Arsenal              Leicester         H   July 7
+## 127  19/20                Arsenal                Watford         H  July 26
+## 128  19/20                Everton Brighton &amp; Hove Albion         A  Oct. 26
+## 129  19/20                Everton              Leicester         A   Dec. 1
+## 130  19/20                Everton              Leicester         A   Dec. 1
+## 131  19/20                Everton               Man City         A   Jan. 1
+## 132  19/20                Everton               Brighton         H  Jan. 11
+## 133  19/20                Everton             Man United         H  March 1
+## 134  19/20                Everton              Leicester         H   July 1
+## 135  19/20        AFC Bournemouth            Southampton         A Sept. 20
+## 136  19/20        AFC Bournemouth               West Ham         H Sept. 28
+## 137  19/20        AFC Bournemouth                Chelsea         A  Dec. 14
+## 138  19/20        AFC Bournemouth               Brighton         A  Dec. 28
+## 139  19/20        AFC Bournemouth               West Ham         A   Jan. 1
+## 140  19/20        AFC Bournemouth                Norwich         A  Jan. 18
+## 141  19/20        AFC Bournemouth                Burnley         A  Feb. 22
+## 142  19/20        AFC Bournemouth                Burnley         A  Feb. 22
+## 143  19/20        AFC Bournemouth              Tottenham         H   July 9
+## 144  19/20        AFC Bournemouth               Man City         A  July 15
+## 145  19/20        AFC Bournemouth            Southampton         H  July 19
+## 146  19/20        AFC Bournemouth            Southampton         H  July 19
+## 147  19/20                Chelsea                Norwich         A  Aug. 24
+## 148  19/20                Chelsea              Liverpool         H Sept. 22
+## 149  19/20                Chelsea                Burnley         A  Oct. 26
+## 150  19/20                Chelsea                Watford         A   Nov. 2
+## 151  19/20                Chelsea               West Ham         H  Nov. 30
+## 152  19/20                Chelsea            Bournemouth         H  Dec. 14
+## 153  19/20                Chelsea              Tottenham         A  Dec. 22
+## 154  19/20                Chelsea              Tottenham         A  Dec. 22
+## 155  19/20                Chelsea      Manchester United         H  Feb. 17
+## 156  19/20                Chelsea      Manchester United         H  Feb. 17
+## 157  19/20                Chelsea        Manchester City         H  June 25
+## 158  19/20                Chelsea               West Ham         A   July 1
+## 159  19/20                Watford                Chelsea         H   Nov. 2
+## 160  19/20                Watford                Burnley         H  Nov. 23
+## 161  19/20                Watford              Liverpool         A  Dec. 14
+## 162  19/20                Watford                 Wolves         H   Jan. 1
+## 163  19/20                Watford             Man United         A  Feb. 23
+## 164  19/20                Watford                Arsenal         A  July 26
+## 165  19/20            Aston Villa                Burnley         H Sept. 28
+## 166  19/20            Aston Villa               Brighton         H  Oct. 19
+## 167  19/20            Aston Villa       Sheffield United         A  Dec. 14
+## 168  19/20            Aston Villa                Burnley         A   Jan. 1
+## 169  19/20            Aston Villa              Tottenham         H  Feb. 16
+## 170  19/20            Aston Villa         Crystal Palace         H  July 12
+## 171  19/20            Aston Villa         Crystal Palace         H  July 12
+## 172  19/20               West Ham               Man City         H  Aug. 10
+## 173  19/20               West Ham               Man City         H  Aug. 10
+## 174  19/20               West Ham               Brighton         A  Aug. 17
+## 175  19/20               West Ham        AFC Bournemouth         A Sept. 28
+## 176  19/20               West Ham         Crystal Palace         H   Oct. 5
+## 177  19/20               West Ham                Burnley         A   Nov. 9
+## 178  19/20               West Ham              Tottenham         H  Nov. 23
+## 179  19/20               West Ham                Chelsea         A  Nov. 30
+## 180  19/20               West Ham            Southampton         A  Dec. 14
+## 181  19/20               West Ham            Bournemouth         H   Jan. 1
+## 182  19/20               West Ham       Sheffield United         A  Jan. 10
+## 183  19/20               West Ham Brighton &amp; Hove Albion         H   Feb. 1
+## 184  19/20               West Ham                Arsenal         A  March 7
+## 185  19/20               West Ham              Tottenham         A  June 23
+## 186  19/20               West Ham                Chelsea         H   July 1
+## 187  19/20               West Ham             Man United         A  July 22
+## 188  19/20       Sheffield United            Southampton         H Sept. 14
+## 189  19/20       Sheffield United              Tottenham         A   Nov. 9
+## 190  19/20       Sheffield United              Newcastle         H   Dec. 5
+## 191  19/20       Sheffield United                Norwich         A   Dec. 8
+## 192  19/20       Sheffield United            Aston Villa         H  Dec. 14
+## 193  19/20       Sheffield United               Brighton         A  Dec. 21
+## 194  19/20       Sheffield United               Brighton         A  Dec. 21
+## 195  19/20       Sheffield United        Manchester City         A  Dec. 29
+## 196  19/20       Sheffield United               West Ham         H  Jan. 10
+## 197  19/20       Sheffield United         Crystal Palace         A   Feb. 1
+## 198  19/20                 Wolves              Leicester         A  Aug. 11
+## 199  19/20                 Wolves            Southampton         H  Oct. 19
+## 200  19/20                 Wolves               Man City         H  Dec. 27
+## 201  19/20                 Wolves               Man City         H  Dec. 27
+## 202  19/20                 Wolves              Liverpool         A  Dec. 29
+## 203  19/20                 Wolves              Liverpool         A  Dec. 29
+## 204  19/20                 Wolves                Watford         A   Jan. 1
+## 205  19/20                 Wolves            Southampton         A  Jan. 18
+## 206  19/20                 Wolves              Leicester         A  Feb. 14
+## 207  19/20           Norwich City                Chelsea         H  Aug. 24
+## 208  19/20           Norwich City             Man United         H  Oct. 27
+## 209  19/20           Norwich City             Man United         H  Oct. 27
+## 210  19/20           Norwich City                Arsenal         H   Dec. 1
+## 211  19/20           Norwich City       Sheffield United         H   Dec. 8
+## 212  19/20           Norwich City              Tottenham         H  Dec. 28
+## 213  19/20           Norwich City         Crystal Palace         H   Jan. 1
+## 214  19/20           Norwich City            Bournemouth         H  Jan. 18
+## 215  19/20           Norwich City              Leicester         H  Feb. 28
+## 216  19/20           Norwich City                Burnley         H  July 18
+## 217  19/20           Norwich City               Man City         A  July 26
+## 218  20/21                Burnley               Man City         A  Nov. 28
+## 219  20/21                Burnley                Arsenal         A  Dec. 13
+## 220  20/21                Burnley             Man United         H  Jan. 12
+## 221  20/21                Burnley              West Brom         H  Feb. 20
+## 222  20/21                Burnley                Arsenal         H  March 6
+## 223  20/21                Burnley            Southampton         A  April 4
+## 224  20/21                Burnley                 Wolves         A April 25
+## 225  20/21                Everton              West Brom         H Sept. 19
+## 226  20/21                Everton         Crystal Palace         A Sept. 26
+## 227  20/21                Everton              Liverpool         H  Oct. 17
+## 228  20/21                Everton                Chelsea         H  Dec. 12
+## 229  20/21                Everton              Leicester         A  Dec. 16
+## 230  20/21                Everton              Liverpool         A  Feb. 20
+## 231  20/21                Everton            Southampton         H  March 1
+## 232  20/21                Everton                Arsenal         A April 23
+## 233  20/21                Chelsea              Liverpool         H Sept. 20
+## 234  20/21                Chelsea                Everton         A  Dec. 12
+## 235  20/21                Chelsea                 Wolves         A  Dec. 15
+## 236  20/21                Chelsea                Arsenal         A  Dec. 26
+## 237  20/21                Chelsea              Leicester         A  Jan. 19
+## 238  20/21                Chelsea       Sheffield United         A   Feb. 7
+## 239  20/21                Chelsea       Sheffield United         A   Feb. 7
+## 240  20/21                Chelsea             Man United         H  Feb. 28
+## 241  20/21                Chelsea              Liverpool         A  March 4
+## 242  20/21                Chelsea               West Ham         A April 24
+## 243  20/21                Chelsea                Arsenal         H   May 12
+## 244  20/21                Chelsea              Leicester         H   May 18
+## 245  20/21                 Fulham            Aston Villa         H Sept. 28
+## 246  20/21                 Fulham       Sheffield United         A  Oct. 18
+## 247  20/21                 Fulham         Crystal Palace         H  Oct. 24
+## 248  20/21                 Fulham               West Ham         A   Nov. 7
+## 249  20/21                 Fulham              Leicester         A  Nov. 30
+## 250  20/21                 Fulham              Liverpool         H  Dec. 13
+## 251  20/21                 Fulham               Brighton         H  Dec. 16
+## 252  20/21                 Fulham              Newcastle         A  Dec. 19
+## 253  20/21                 Fulham            Southampton         H  Dec. 26
+## 254  20/21                 Fulham               West Ham         H   Feb. 6
+## 255  20/21                 Fulham              Tottenham         H  March 4
+## 256  20/21                 Fulham                  Leeds         H March 19
+## 257  20/21                 Fulham            Aston Villa         A  April 4
+## 258  20/21                 Fulham                 Wolves         H  April 9
+## 259  20/21                 Fulham                Arsenal         A April 18
+## 260  20/21       Sheffield United                 Fulham         H  Oct. 18
+## 261  20/21       Sheffield United              Liverpool         A  Oct. 24
+## 262  20/21       Sheffield United              Liverpool         A  Oct. 24
+## 263  20/21       Sheffield United               Brighton         A  Dec. 20
+## 264  20/21       Sheffield United              Newcastle         H  Jan. 12
+## 265  20/21       Sheffield United                Chelsea         H   Feb. 7
+## 266  20/21       Sheffield United                Chelsea         H   Feb. 7
+## 267  20/21       Sheffield United               West Ham         A  Feb. 15
+## 268  20/21       Sheffield United            Aston Villa         H  March 3
+## 269  20/21       Sheffield United               Brighton         H April 24
+## 270  20/21       Sheffield United              Tottenham         A    May 2
+## 271  20/21            Aston Villa                 Fulham         A Sept. 28
+## 272  20/21            Aston Villa            Southampton         H   Nov. 1
+## 273  20/21            Aston Villa                Arsenal         A   Nov. 8
+## 274  20/21            Aston Villa               Brighton         H  Nov. 21
+## 275  20/21            Aston Villa               West Ham         A  Nov. 30
+## 276  20/21            Aston Villa              West Brom         A  Dec. 20
+## 277  20/21            Aston Villa              West Brom         A  Dec. 20
+## 278  20/21            Aston Villa         Crystal Palace         H  Dec. 26
+## 279  20/21            Aston Villa       Sheffield United         A  March 3
+## 280  20/21            Aston Villa                 Fulham         H  April 4
+## 281  20/21            Aston Villa              Liverpool         A April 10
+## 282  20/21            Aston Villa               Man City         H April 21
+## 283  20/21         Leicester City               West Ham         H   Oct. 4
+## 284  20/21         Leicester City                  Leeds         A   Nov. 2
+## 285  20/21         Leicester City                 Wolves         H   Nov. 8
+## 286  20/21         Leicester City                 Fulham         H  Nov. 30
+## 287  20/21         Leicester City                Everton         H  Dec. 16
+## 288  20/21         Leicester City              Tottenham         A  Dec. 20
+## 289  20/21         Leicester City              Tottenham         A  Dec. 20
+## 290  20/21         Leicester City                Chelsea         H  Jan. 19
+## 291  20/21         Leicester City              Liverpool         H  Feb. 13
+## 292  20/21         Leicester City              Liverpool         H  Feb. 13
+## 293  20/21         Leicester City                Arsenal         H  Feb. 28
+## 294  20/21         Leicester City                Arsenal         H  Feb. 28
+## 295  20/21         Leicester City               West Ham         A April 11
+## 296  20/21         Leicester City                Chelsea         A   May 18
+## 297  20/21         Leicester City              Tottenham         H   May 23
+## 298  20/21 Brighton &amp; Hove Albion              Newcastle         A Sept. 20
+## 299  20/21 Brighton &amp; Hove Albion              Newcastle         A Sept. 20
+## 300  20/21 Brighton &amp; Hove Albion             Man United         H Sept. 26
+## 301  20/21 Brighton &amp; Hove Albion             Man United         H Sept. 26
+## 302  20/21 Brighton &amp; Hove Albion             Man United         H Sept. 26
+## 303  20/21 Brighton &amp; Hove Albion              Tottenham         A   Nov. 1
+## 304  20/21 Brighton &amp; Hove Albion              Tottenham         A   Nov. 1
+## 305  20/21 Brighton &amp; Hove Albion            Aston Villa         A  Nov. 21
+## 306  20/21 Brighton &amp; Hove Albion              Liverpool         H  Nov. 28
+## 307  20/21 Brighton &amp; Hove Albion              Liverpool         H  Nov. 28
+## 308  20/21 Brighton &amp; Hove Albion              Liverpool         H  Nov. 28
+## 309  20/21 Brighton &amp; Hove Albion            Southampton         H   Dec. 7
+## 310  20/21 Brighton &amp; Hove Albion                 Fulham         A  Dec. 16
+## 311  20/21 Brighton &amp; Hove Albion       Sheffield United         H  Dec. 20
+## 312  20/21 Brighton &amp; Hove Albion              West Brom         A  Feb. 27
+## 313  20/21 Brighton &amp; Hove Albion              West Brom         A  Feb. 27
+## 314  20/21 Brighton &amp; Hove Albion       Sheffield United         A April 24
+## 315  20/21         Crystal Palace            Southampton         H Sept. 12
+## 316  20/21         Crystal Palace             Man United         A Sept. 19
+## 317  20/21         Crystal Palace             Man United         A Sept. 19
+## 318  20/21         Crystal Palace                Everton         H Sept. 26
+## 319  20/21         Crystal Palace                  Leeds         H   Nov. 7
+## 320  20/21         Crystal Palace                 Fulham         A  Oct. 24
+## 321  20/21         Crystal Palace                 Wolves         A  Oct. 30
+## 322  20/21         Crystal Palace                 Wolves         A  Oct. 30
+## 323  20/21         Crystal Palace                    WBA         A   Dec. 6
+## 324  20/21         Crystal Palace            Aston Villa         A  Dec. 26
+## 325  20/21         Crystal Palace              West Brom         H March 13
+## 326  20/21                  Leeds                 Wolves         H  Oct. 19
+## 327  20/21                  Leeds              Leicester         H   Nov. 2
+## 328  20/21                  Leeds         Crystal Palace         A   Nov. 7
+## 329  20/21                  Leeds                Arsenal         H  Nov. 22
+## 330  20/21                  Leeds               West Ham         H  Dec. 11
+## 331  20/21                  Leeds                Arsenal         A  Feb. 14
+## 332  20/21                  Leeds            Southampton         H  Feb. 23
+## 333  20/21                  Leeds                 Fulham         A March 19
+## 334  20/21                  Leeds               Man City         A April 10
+## 335  20/21        Manchester City              Liverpool         H   Nov. 8
+## 336  20/21        Manchester City              Tottenham         A  Nov. 21
+## 337  20/21        Manchester City                Burnley         H  Nov. 28
+## 338  20/21        Manchester City             Man United         A  Dec. 12
+## 339  20/21        Manchester City              West Brom         A  Jan. 26
+## 340  20/21        Manchester City                 Wolves         H  March 2
+## 341  20/21        Manchester City                  Leeds         H April 10
+## 342  20/21        Manchester City            Aston Villa         A April 21
+## 343  20/21        Manchester City              Newcastle         A   May 14
+## 344  20/21      Manchester United         Crystal Palace         H Sept. 19
+## 345  20/21      Manchester United         Crystal Palace         H Sept. 19
+## 346  20/21      Manchester United               Brighton         A Sept. 26
+## 347  20/21      Manchester United               Brighton         A Sept. 26
+## 348  20/21      Manchester United               Brighton         A Sept. 26
+## 349  20/21      Manchester United              Newcastle         A  Oct. 17
+## 350  20/21      Manchester United              Newcastle         A  Oct. 17
+## 351  20/21      Manchester United              West Brom         H  Nov. 21
+## 352  20/21      Manchester United              West Brom         H  Nov. 21
+## 353  20/21      Manchester United               Man City         H  Dec. 12
+## 354  20/21      Manchester United                Burnley         A  Jan. 12
+## 355  20/21      Manchester United            Southampton         H   Feb. 2
+## 356  20/21      Manchester United            Southampton         H   Feb. 2
+## 357  20/21      Manchester United            Southampton         H   Feb. 2
+## 358  20/21      Manchester United              West Brom         A  Feb. 14
+## 359  20/21      Manchester United                Chelsea         A  Feb. 28
+## 360  20/21      Manchester United              Tottenham         A April 11
+## 361  20/21      Manchester United              Liverpool         H   May 13
+## 362  20/21      Manchester United                 Wolves         A   May 23
+## 363  20/21              Newcastle               Brighton         H Sept. 20
+## 364  20/21              Newcastle               Brighton         H Sept. 20
+## 365  20/21              Newcastle              Tottenham         A Sept. 27
+## 366  20/21              Newcastle             Man United         H  Oct. 17
+## 367  20/21              Newcastle             Man United         H  Oct. 17
+## 368  20/21              Newcastle                 Fulham         H  Dec. 19
+## 369  20/21              Newcastle       Sheffield United         A  Jan. 12
+## 370  20/21              Newcastle               West Ham         H April 17
+## 371  20/21              Newcastle              Liverpool         A April 24
+## 372  20/21              Newcastle               Man City         H   May 14
+## 373  20/21            Southampton         Crystal Palace         A Sept. 12
+## 374  20/21            Southampton              Tottenham         H Sept. 20
+## 375  20/21            Southampton              Tottenham         H Sept. 20
+## 376  20/21            Southampton            Aston Villa         A   Nov. 1
+## 377  20/21            Southampton               Brighton         A   Dec. 7
+## 378  20/21            Southampton                 Fulham         A  Dec. 26
+## 379  20/21            Southampton             Man United         A   Feb. 2
+## 380  20/21            Southampton             Man United         A   Feb. 2
+## 381  20/21            Southampton             Man United         A   Feb. 2
+## 382  20/21            Southampton                  Leeds         A  Feb. 23
+## 383  20/21            Southampton                Everton         A  March 1
+## 384  20/21            Southampton                Burnley         H  April 4
+## 385  20/21            Southampton              Tottenham         A April 21
+## 386  20/21            Southampton              Tottenham         A April 21
+## 387  20/21               West Ham       Newcastle United         H Sept. 12
+## 388  20/21               West Ham              Leicester         A   Oct. 4
+## 389  20/21               West Ham              Liverpool         A  Oct. 31
+## 390  20/21               West Ham                 Fulham         H   Nov. 7
+## 391  20/21               West Ham            Aston Villa         H  Nov. 30
+## 392  20/21               West Ham                  Leeds         A  Dec. 11
+## 393  20/21               West Ham                 Fulham         A   Feb. 6
+## 394  20/21               West Ham       Sheffield United         H  Feb. 15
+## 395  20/21               West Ham              Tottenham         H  Feb. 21
+## 396  20/21               West Ham              Leicester         H April 11
+## 397  20/21               West Ham              Newcastle         A April 17
+## 398  20/21               West Ham                Chelsea         H April 24
+## 399  20/21      Tottenham Hotspur            Southampton         A Sept. 20
+## 400  20/21      Tottenham Hotspur            Southampton         A Sept. 20
+## 401  20/21      Tottenham Hotspur              Newcastle         H Sept. 27
+## 402  20/21      Tottenham Hotspur               Brighton         H   Nov. 1
+## 403  20/21      Tottenham Hotspur               Brighton         H   Nov. 1
+## 404  20/21      Tottenham Hotspur               Man City         H  Nov. 21
+## 405  20/21      Tottenham Hotspur              Leicester         H  Dec. 20
+## 406  20/21      Tottenham Hotspur              Leicester         H  Dec. 20
+## 407  20/21      Tottenham Hotspur              Liverpool         H  Jan. 28
+## 408  20/21      Tottenham Hotspur              Liverpool         H  Jan. 28
+## 409  20/21      Tottenham Hotspur               West Ham         A  Feb. 21
+## 410  20/21      Tottenham Hotspur                 Fulham         A  March 4
+## 411  20/21      Tottenham Hotspur             Man United         H April 11
+## 412  20/21      Tottenham Hotspur            Southampton         H April 21
+## 413  20/21      Tottenham Hotspur            Southampton         H April 21
+## 414  20/21      Tottenham Hotspur       Sheffield United         H    May 2
+## 415  20/21      Tottenham Hotspur              Leicester         A   May 23
+## 416  20/21                 Wolves                  Leeds         A  Oct. 19
+## 417  20/21                 Wolves         Crystal Palace         H  Oct. 30
+## 418  20/21                 Wolves         Crystal Palace         H  Oct. 30
+## 419  20/21                 Wolves              Leicester         A   Nov. 8
+## 420  20/21                 Wolves              Liverpool         A   Dec. 6
+## 421  20/21                 Wolves                Chelsea         H  Dec. 15
+## 422  20/21                 Wolves                Arsenal         H   Feb. 2
+## 423  20/21                 Wolves               Man City         A  March 2
+## 424  20/21                 Wolves                 Fulham         A  April 9
+## 425  20/21                 Wolves                Burnley         H April 25
+## 426  20/21                 Wolves             Man United         H   May 23
+## 427  20/21                Arsenal            Aston Villa         H   Nov. 8
+## 428  20/21                Arsenal                  Leeds         A  Nov. 22
+## 429  20/21                Arsenal                Burnley         H  Dec. 13
+## 430  20/21                Arsenal                Chelsea         H  Dec. 26
+## 431  20/21                Arsenal                 Wolves         A   Feb. 2
+## 432  20/21                Arsenal                  Leeds         H  Feb. 14
+## 433  20/21                Arsenal              Leicester         A  Feb. 28
+## 434  20/21                Arsenal              Leicester         A  Feb. 28
+## 435  20/21                Arsenal                Burnley         A  March 6
+## 436  20/21                Arsenal                 Fulham         H April 18
+## 437  20/21                Arsenal                Everton         H April 23
+## 438  20/21                Arsenal                Chelsea         A   May 12
+## 439  20/21              Liverpool                Chelsea         A Sept. 20
+## 440  20/21              Liverpool                Everton         A  Oct. 17
+## 441  20/21              Liverpool       Sheffield United         H  Oct. 24
+## 442  20/21              Liverpool       Sheffield United         H  Oct. 24
+## 443  20/21              Liverpool               West Ham         H  Oct. 31
+## 444  20/21              Liverpool               Man City         A   Nov. 8
+## 445  20/21              Liverpool               Brighton         A  Nov. 28
+## 446  20/21              Liverpool               Brighton         A  Nov. 28
+## 447  20/21              Liverpool               Brighton         A  Nov. 28
+## 448  20/21              Liverpool                 Wolves         H   Dec. 6
+## 449  20/21              Liverpool                 Fulham         A  Dec. 13
+## 450  20/21              Liverpool              Tottenham         A  Jan. 28
+## 451  20/21              Liverpool              Tottenham         A  Jan. 28
+## 452  20/21              Liverpool              Leicester         A  Feb. 13
+## 453  20/21              Liverpool              Leicester         A  Feb. 13
+## 454  20/21              Liverpool                Everton         H  Feb. 20
+## 455  20/21              Liverpool                Chelsea         H  March 4
+## 456  20/21              Liverpool            Aston Villa         H April 10
+## 457  20/21              Liverpool              Newcastle         H April 24
+## 458  20/21              Liverpool             Man United         A   May 13
+## 459  20/21              West Brom                Everton         A Sept. 19
+## 460  20/21              West Brom             Man United         A  Nov. 21
+## 461  20/21              West Brom             Man United         A  Nov. 21
+## 462  20/21              West Brom         Crystal Palace         H   Dec. 6
+## 463  20/21              West Brom            Aston Villa         H  Dec. 20
+## 464  20/21              West Brom            Aston Villa         H  Dec. 20
+## 465  20/21              West Brom               Man City         H  Jan. 26
+## 466  20/21              West Brom             Man United         H  Feb. 14
+## 467  20/21              West Brom                Burnley         A  Feb. 20
+## 468  20/21              West Brom               Brighton         H  Feb. 27
+## 469  20/21              West Brom               Brighton         H  Feb. 27
+## 470  20/21              West Brom         Crystal Palace         A March 13
+##                                                                                                                                 incident
+## 1                                             Brighton goal for Leandro Trossard ruled out for offside by Dan Burn, who created the goal
+## 2                                                                        Conor Hourihane goal ruled out for a foul by Wesley on Mat Ryan
+## 3                                                    Penalty awarded (scored by Neil Maupay) for foul on Aaron Connolly by Michael Keane
+## 4                                                  Jamie Vardy penalty retaken after James Maddison scored the rebound with encroachment
+## 5                                                                                                 David Luiz goal disallowed for offside
+## 6                                                                                                  John Egan goal ruled out for handball
+## 7                                                                                             Jack O'Connell goal disallowed for offside
+## 8                                                                                                  Harry Kane goal ruled out for offside
+## 9                                                                                                    Dan Burn goal ruled out for offside
+## 10                                                                                 Goal for Dominic Calvert-Lewin ruled out for handball
+## 11                                                                                Goal for Glenn Murray allowed after incorrect handball
+## 12                                                              Jay Rodriguez goal ruled out for offside against Johann Berg Gudmundsson
+## 13                                                Pierre-Emerick Aubameyang goal, originally ruled out for offside, overturned on review
+## 14                                                                                                Sadio Mane goal ruled out for handball
+## 15                                                   Penalty awarded (missed by Marcus Rashford) for foul on Daniel James by Ben Godfrey
+## 16                                                             Penalty awarded (missed by Anthony Martial) for handball by Todd Cantwell
+## 17                                                    Penalty awarded (scored by Marcus Rashford) for foul on Rashford by Bernardo Silva
+## 18                                                           Roberto Firmino goal disallowed for foul on David De Gea by Virgil van Dijk
+## 19                                                          Kurt Zouma goal disallowed for foul on Brandon Williams by Cesar Azpilicueta
+## 20                                                                                            Olivier Giroud goal disallowed for offside
+## 21                                                                          Goal for Troy Deeney disallowed for handball by Craig Dawson
+## 22                                             Goal for Everton disallowed for offside against Gylfi Sigurdsson in front of David De Gea
+## 23                                                                              Penalty awarded for a foul on Bruno Fernandes overturned
+## 24                                                                                               Jordan Ayew goal disallowed for offside
+## 25                                                              Penalty awarded for a handball by Paul Pogba (scored by Michael Antonio)
+## 26                                                                 Jordan Ayew goal awarded after originally being ruled out for offside
+## 27                                             Penalty awarded for foul by Calum Chambers on Wilfried Zaha (initially booked for diving)
+## 28                                                                                   Sokratis goal disallowed for foul by Calum Chambers
+## 29                                                                                  James Tomkins goal ruled out for push by Jordan Ayew
+## 30                                                             Goal for Max Meyer ruled out for offside by Wilfried Zaha in the build-up
+## 31                                                              Connor Wickham goal awarded after originally being ruled out for offside
+## 32                                                                              Pierre-Emerick Aubameyang sent off for foul on Max Meyer
+## 33                                                                                Penalty for handball against Jairo Riedewald cancelled
+## 34                                                                                                      Red card for Joel Ward rescinded
+## 35                                                                                             Mamadou Sakho goal ruled out for handball
+## 36                                                           Penalty cancelled, awarded for foul on Jack Grealish by Patrick van Aanholt
+## 37                                                                                               Jordan Ayew goal disallowed for offside
+## 38                                                 Goal for Villa's John McGinn ruled out on review, Conor Hourihane offside in build-up
+## 39                                                                            Jonny Evans own goal ruled out due to a foul by Chris Wood
+## 40                                                                                   Penalty overturned for diving by Callum Hudson-Odoi
+## 41                                                                                                Chris Wood goal disallowed for offside
+## 42                                                          Penalty (scored by Barnes) awarded for foul on Ashley Barnes by Jose Holebas
+## 43                                                        Goal for Villa's Jack Grealish ruled out on review, Wesley offside in build-up
+## 44                                                               Goal for Josh King ruled out for handball in build-up by Philip Billing
+## 45                 Goal for Harry Wilson ruled out for handball by Bournemouth's Adam Smith, penalty awarded and scored by Jay Rodriguez
+## 46                                                         Penalty given (scored by Riyad Mahrez) for a foul by Ben Mee on Sergio Aguero
+## 47                                                                         Red card for Emiliano Buendia for an elbow on Ashley Westwood
+## 48                                                              Jay Rodriguez goal ruled out for offside against Johann Berg Gudmundsson
+## 49                                                              Jonjo Shelvey goal, originally ruled out for offside, cleared by the VAR
+## 50                                                                                 Moussa Djenepo sent off for challenge on Isaac Hayden
+## 51                                                                                        Penalty awarded for handball by Sofiane Boufal
+## 52                                                                                         Oliver McBurnie's goal disallowed for offside
+## 53                                                                                 Josh King scored for the Cherries, but he was offside
+## 54                                                                       Raul Jimenez goal ruled out for offside against Patrick Cutrone
+## 55                                                                                   Ryan Bertrand sent off for challenge on Ayoze Perez
+## 56                                                                                       Goal for Michail Antonio ruled out for handball
+## 57                                                             Goal for Max Meyer ruled out for offside by Wilfried Zaha in the build-up
+## 58                                                          Penalty for Southampton cancelled for offside against Shane Long in build-up
+## 59                                                                                                Jonny Evans goal ruled out for offside
+## 60                                                           Penalty awarded (scored by Raul Jimenez) for foul on Jonny by Jack Stephens
+## 61                                                                                 Moussa Djenepo sent off for challenge on Isaac Hayden
+## 62                                                               Penalty awarded (missed by Matt Ritchie) for handball by Sofiane Boufal
+## 63                                                                   Penalty awarded (missed by Danny Ings) for handball by Harry Wilson
+## 64                                                                                   Sam Surridge goal disallowed, Callum Wilson offside
+## 65                                      Chelsea goal ruled out after Mason Mount was offside in the build-up to Cesar Azpilicueta's goal
+## 66                                                                                                Sadio Mane goal ruled out for handball
+## 67                                                                                  James Tomkins goal ruled out for push by Jordan Ayew
+## 68                                                                                                 Sadio Mane goal ruled out for offside
+## 69                                                     Goal for Sadio Mane given after originally ruled out for handball by Adam Lallana
+## 70                                                                    Goal for Pedro Neto ruled out for offside in the build-up by Jonny
+## 71                                                           Roberto Firmino goal disallowed for foul on David De Gea by Virgil van Dijk
+## 72                                                       City goal for Riyad Mahrez ruled out for handball by Phil Foden in the build-up
+## 73                                                  Wolves goal for Leander Dendoncker disallowed for handball in build-up by Willy Boly
+## 74                                                                                       Goal disallowed for offside against Ayoze Perez
+## 75                                                                                Son Heung-Min offside in build-up to Serge Aurier goal
+## 76                                                                            Jonny Evans own goal ruled out due to a foul by Chris Wood
+## 77                                                                                   Ryan Bertrand sent off for challenge on Ayoze Perez
+## 78                                                 Jamie Vardy penalty retaken after James Maddison scored the rebound with encroachment
+## 79                                                                           Penalty for foul on Ben Chilwell by Mason Holgate cancelled
+## 80                                                                   Kelechi Iheanacho effort, originally ruled offside, given as a goal
+## 81                                                          Penalty for Southampton cancelled for offside against Shane Long in build-up
+## 82                                                                                                Jonny Evans goal ruled out for offside
+## 83                                                           Wolves goal for Willy Boly disallowed for offside in build-up by Pedro Neto
+## 84                                                           Penalty (missed by Sergio Aguero) awarded for handball against Dennis Praet
+## 85                                                                                    Goal for Kelechi Iheanacho disallowed for handball
+## 86                                                       Penalty awarded (scored by Gylfi Sigurdsson) for handball against Wilfred Ndidi
+## 87                                                                                      Edward Nketiah sent off for foul on James Justin
+## 88                                                     City goal for Gabriel Jesus ruled out for handball in build-up by Aymeric Laporte
+## 89                                                                                       Goal disallowed for offside against Ayoze Perez
+## 90                                                                                Son Heung-Min offside in build-up to Serge Aurier goal
+## 91                                                        Goal for David McGoldrick disallowed for offside in build-up by John Lundstram
+## 92                                                                                               Declan Rice goal disallowed for offside
+## 93                                                      Penalty (scored by Willian) awarded for foul by Paulo Gazzaniga on Marcos Alonso
+## 94                                                                                    Son Heung-Min sent off for foul on Antonio Rudiger
+## 95                                                                                                 Harry Kane goal ruled out for offside
+## 96                                                                                                Teemu Pukki goal ruled out for offside
+## 97                                                  Penalty (missed by Ilkay Gundogan) awarded for foul by Serge Aurier on Sergio Aguero
+## 98                       Penalty (missed by Son Heung-Min but scored on the rebound) awarded for foul by Bjorn Engels on Steven Bergwijn
+## 99                                                                              Penalty awarded for a foul on Bruno Fernandes overturned
+## 100                                                                                            Son Heung-Min goal disallowed for offside
+## 101                                                            Goal for Harry Kane ruled out for handball in the build-up by Lucas Moura
+## 102                                                                           Goal for Callum Wilson ruled out for handball by Josh King
+## 103                                     City goal for Gabriel Jesus ruled out for an offside against Raheem Sterling earlier in the move
+## 104                                       Missed City penalty retaken due to encroachment by Declan Rice. Retake scored by Sergio Aguero
+## 105                                                    City goal for Gabriel Jesus ruled out for handball in build-up by Aymeric Laporte
+## 106                                                   Penalty awarded (scored by Marcus Rashford) for foul on Rashford by Bernardo Silva
+## 107                                           Penalty awarded (missed by Raheem Sterling) for foul on Riyad Mahrez by Leander Dendoncker
+## 108                     Missed City penalty retaken due to encroachment by Connor Coady . Retake scored by on rebound by Raheem Sterling
+## 109                                                                                           Goal for Lys Mousset ruled out for offside
+## 110                                                                Goal for Phil Foden ruled out for offside in build-up by Joao Cancelo
+## 111                                                                               Penalty for handball against Jairo Riedewald cancelled
+## 112                                                 Penalty (missed by Ilkay Gundogan) awarded for foul by Serge Aurier on Sergio Aguero
+## 113                                                          Penalty (missed by Sergio Aguero) awarded for handball against Dennis Praet
+## 114                                                        Penalty given (scored by Riyad Mahrez) for a foul by Ben Mee on Sergio Aguero
+## 115                                              Fernandinho sent off for deliberate handball on the goalline, penalty scored by Willian
+## 116                                                      City goal for Riyad Mahrez ruled out for handball by Phil Foden in the build-up
+## 117                                                              Man City penalty, for a foul on Gabriel Jesus by Steve Cook, overturned
+## 118                                                                                        Goal for Onel Hernandez ruled out for offside
+## 119                                               Pierre-Emerick Aubameyang goal, originally ruled out for offside, overturned on review
+## 120                                            Penalty awarded for foul by Calum Chambers on Wilfried Zaha (initially booked for diving)
+## 121                                                                                  Sokratis goal disallowed for foul by Calum Chambers
+## 122                                   Pierre-Emerick Aubameyang missed penalty retaken (and scored) following encroachment by a defender
+## 123                                                                                               David Luiz goal disallowed for offside
+## 124                                                                             Pierre-Emerick Aubameyang sent off for foul on Max Meyer
+## 125                                                          Alexandre Lacazette goal allowed after incorrect offside against Mesut Ozil
+## 126                                                                                     Edward Nketiah sent off for foul on James Justin
+## 127                                Penalty (scored by Pierre-Emerick Aubameyang) awarded for foul by Craig Dawson on Alexandre Lacazette
+## 128                                                  Penalty awarded (scored by Neal Maupay) for foul on Aaron Connolly by Michael Keane
+## 129                                                                          Penalty for foul on Ben Chilwell by Mason Holgate cancelled
+## 130                                                                  Kelechi Iheanacho effort, originally ruled offside, given as a goal
+## 131                                                                Goal for Phil Foden ruled out for offside in build-up by Joao Cancelo
+## 132                                                                                Goal for Dominic Calvert-Lewin ruled out for handball
+## 133                                            Goal for Everton disallowed for offside against Gylfi Sigurdsson in front of David De Gea
+## 134                                                      Penalty awarded (scored by Gylfi Sigurdsson) for handball against Wilfred Ndidi
+## 135                                                                                Josh King scored for the Cherries, but he was offside
+## 136                                                                 Josh King goal, originally ruled out for offside, cleared by the VAR
+## 137                                                                Dan Gosling goal, originally disallowed for offside, given by the VAR
+## 138                                                                                                  Dan Burn goal ruled out for offside
+## 139                                                                                        Aaron Cresswell red card downgraded to yellow
+## 140                                                                                   Red card for Ben Godfrey for foul on Callum Wilson
+## 141                                                              Goal for Josh King ruled out for handball in build-up by Philip Billing
+## 142                Goal for Harry Wilson ruled out for handball by Bournemouth's Adam Smith, penalty awarded and scored by Jay Rodriguez
+## 143                                                                           Goal for Callum Wilson ruled out for handball by Josh King
+## 144                                                              Man City penalty, for a foul on Gabriel Jesus by Steve Cook, overturned
+## 145                                                                  Penalty awarded (missed by Danny Ings) for handball by Harry Wilson
+## 146                                                                                  Sam Surridge goal disallowed, Callum Wilson offside
+## 147                                                Chelsea goal for Kurt Zouma disallowed for a foul on the goalkeeper by Olivier Giroud
+## 148                                             Goal ruled out after Mason Mount was offside in the build-up to Cesar Azpilicueta's goal
+## 149                                                                                  Penalty overturned for diving by Callum Hudson-Odoi
+## 150                                                Penalty (scored by Deulofeu) awarded for foul by Jorginho for trip on Gerard Deulofeu
+## 151                                                                                      Goal for Michail Antonio ruled out for handball
+## 152                                                                Dan Gosling goal, originally disallowed for offside, given by the VAR
+## 153                                                     Penalty (scored by Willian) awarded for foul by Paulo Gazzaniga on Marcos Alonso
+## 154                                                                                   Son Heung-Min sent off for foul on Antonio Rudiger
+## 155                                                         Kurt Zouma goal disallowed for foul on Brandon Williams by Cesar Azpilicueta
+## 156                                                                                           Olivier Giroud goal disallowed for offside
+## 157                                              Fernandinho sent off for deliberate handball on the goalline, penalty scored by Willian
+## 158                                                                     Tomas Soucek goal disallowed for offside against Michail Antonio
+## 159                                                         Penalty (scored by Deulofeu) awarded for trip on Gerard Deulofeu by Jorginho
+## 160                                                         Penalty (scored by Barnes) awarded for foul on Ashley Barnes by Jose Holebas
+## 161                                                                                                Sadio Mane goal ruled out for offside
+## 162                                                      Christian Kabasele sent off for professional foul after originally being booked
+## 163                                                                         Goal for Troy Deeney disallowed for handball by Craig Dawson
+## 164                                Penalty (scored by Pierre-Emerick Aubameyang) awarded for foul by Craig Dawson on Alexandre Lacazette
+## 165                                                        Goal for John McGinn ruled out on review, Conor Hourihane offside in build-up
+## 166                                                                      Conor Hourihane goal ruled out for a foul by Wesley on Mat Ryan
+## 167                                                                  Penalty awarded (missed by Jack Grealish) for handball by John Egan
+## 168                                                       Goal for Villa's Jack Grealish ruled out on review, Wesley offside in build-up
+## 169                      Penalty (missed by Son Heung-Min but scored on the rebound) awarded for foul by Bjorn Engels on Steven Bergwijn
+## 170                                                                                            Mamadou Sakho goal ruled out for handball
+## 171                                                          Penalty cancelled, awarded for foul on Jack Grealish by Patrick van Aanholt
+## 172                                     City goal for Gabriel Jesus ruled out for an offside against Raheem Sterling earlier in the move
+## 173                                       Missed City penalty retaken due to encroachment by Declan Rice. Retake scored by Sergio Aguero
+## 174                                           Brighton goal for Leandro Trossard ruled out for offside by Dan Burn, who created the goal
+## 175                                                                 Josh King goal, originally ruled out for offside, cleared by the VAR
+## 176                                                                Jordan Ayew goal awarded after originally being ruled out for offside
+## 177                                                                                               Chris Wood goal disallowed for offside
+## 178                                                                                              Declan Rice goal disallowed for offside
+## 179                                                                                      Goal for Michail Antonio ruled out for handball
+## 180                                                                                      Goal for Michail Antonio ruled out for handball
+## 181                                                                                        Aaron Cresswell red card downgraded to yellow
+## 182                                                      Goal for Robert Snodgrass ruled out for handball in the build-up by Declan Rice
+## 183                                                                               Goal for Glenn Murray allowed after incorrect handball
+## 184                                                          Alexandre Lacazette goal allowed after incorrect offside against Mesut Ozil
+## 185                                                                                            Son Heung-Min goal disallowed for offside
+## 186                                                                     Tomas Soucek goal disallowed for offside against Michail Antonio
+## 187                                                             Penalty awarded for a handball by Paul Pogba (scored by Michael Antonio)
+## 188                                                                                        Oliver McBurnie's goal disallowed for offside
+## 189                                                       Goal for David McGoldrick disallowed for offside in build-up by John Lundstram
+## 190                                                             Jonjo Shelvey goal, originally ruled out for offside, cleared by the VAR
+## 191                                                                                                  Red card for Chris Basham rescinded
+## 192                                                                  Penalty awarded (missed by Jack Grealish) for handball by John Egan
+## 193                                                                                                John Egan goal ruled out for handball
+## 194                                                                                           Jack O'Connell goal disallowed for offside
+## 195                                                                                           Goal for Lys Mousset ruled out for offside
+## 196                                                      Goal for Robert Snodgrass ruled out for handball in the build-up by Declan Rice
+## 197                                                                                                     Red card for Joel Ward rescinded
+## 198                                                 Wolves goal for Leander Dendoncker disallowed for handball in build-up by Willy Boly
+## 199                                                                      Raul Jimenez goal ruled out for offside against Patrick Cutrone
+## 200                                           Penalty awarded (missed by Raheem Sterling) for foul on Riyad Mahrez by Leander Dendoncker
+## 201                     Missed City penalty retaken due to encroachment by Connor Coady . Retake scored by on rebound by Raheem Sterling
+## 202                                                    Goal for Sadio Mane given after originally ruled out for handball by Adam Lallana
+## 203                                                                   Goal for Pedro Neto ruled out for offside in the build-up by Jonny
+## 204                                                      Christian Kabasele sent off for professional foul after originally being booked
+## 205                                                          Penalty awarded (scored by Raul Jimenez) for foul on Jonny by Jack Stephens
+## 206                                                          Wolves goal for Willy Boly disallowed for offside in build-up by Pedro Neto
+## 207                                                Chelsea goal for Kurt Zouma disallowed for a foul on the goalkeeper by Olivier Giroud
+## 208                                                  Penalty awarded (missed by Marcus Rashford) for foul on Daniel James by Ben Godfrey
+## 209                                                            Penalty awarded (missed by Anthony Martial) for handball by Todd Cantwell
+## 210                                   Pierre-Emerick Aubameyang missed penalty retaken (and scored) following encroachment by a defender
+## 211                                                                                                  Red card for Chris Basham rescinded
+## 212                                                                                               Teemu Pukki goal ruled out for offside
+## 213                                                             Connor Wickham goal awarded after originally being ruled out for offside
+## 214                                                                                   Red card for Ben Godfrey for foul on Callum Wilson
+## 215                                                                                   Goal for Kelechi Iheanacho disallowed for handball
+## 216                                                                        Red card for Emiliano Buendia for an elbow on Ashley Westwood
+## 217                                                                                        Goal for Onel Hernandez ruled out for offside
+## 218                                         Bailey Peacock-Farrell own goal disallowed for offside in the build-up against Gabriel Jesus
+## 219                                                                         Granit Xhaka sent off for violent conduct on Ashley Westwood
+## 220                Man United free-kick and Robbie Brady red-card review cancelled for foul in the build-up by Luke Shaw, who was booked
+## 221                                                     Semi Ajayi sent off for handball and denying an obvious goal-scoring opportunity
+## 222                                                                     Penalty and red card for handball against Erik Pieters cancelled
+## 223                                                Penalty awarded (scored by Chris Wood) for foul on Erik Pieters by Kyle Walker-Peters
+## 224                                                                                              Matej Vydra goal disallowed for offside
+## 225                                                            Dominic Calvert-Lewin goal awarded after originally ruled out for offside
+## 226                                                                    Penalty awarded (scored by Richarlison) for handball by Joel Ward
+## 227                                                                       Jordan Henderson goal ruled out for offside against Sadio Mane
+## 228                                                                          Penalty cancelled for offside against Dominic Calvert-Lewin
+## 229                                                                        Penalty cancelled for challenge on Ayoze Perez by Andre Gomes
+## 230                                 Penalty overturn review rejected after Trent Alexander-Arnold had brought down Dominic Calvert-Lewin
+## 231                                                      Michael Keane goal disallowed for offside in the build-up against Mason Holgate
+## 232                                                           Arsenal penalty rescinded for offside in the build-up against Nicolas Pepe
+## 233                                    Andreas Christensen sent off for denying a goal-scoring opportunity when bringing down Sadio Mane
+## 234                                                                          Penalty cancelled for offside against Dominic Calvert-Lewin
+## 235                                                                         Penalty cancelled for challenge on Pedro Neto by Reece James
+## 236                                                                                   Tammy Abraham goal awarded after incorrect offside
+## 237                                                     Penalty cancelled as Jonny Evans' foul on Christian Pulisic was outside the area
+## 238                                                           Penalty for Ben Chilwell's challenge on Chris Basham cancelled for offside
+## 239                                                   Penalty awarded (scored by Jorginho) for Aaron Ramsdale's challenge on Timo Werner
+## 240                                                                      Penalty review rejected for handball against Callum Hudson-Odoi
+## 241                                                                                              Timo Werner goal disallowed for offside
+## 242                                                                 Fabian Balbuena yellow card upgraded to red for foul on Ben Chilwell
+## 243                                                                                        Christian Pulisic goal disallowed for offside
+## 244                                                                                             Timo Werner goal disallowed for handball
+## 245                                                 Bobby Decordova-Reid goal disallowed for foul in the build-up by Aleksandar Mitrovic
+## 246                                             Penalty awarded (scored by Billy Sharp) for foul on Jack Robinson by Aleksandar Mitrovic
+## 247                                                                                   Aboubakar Kamara sent off for foul on Eberechi Eze
+## 248                                                 Penalty awarded (missed by Ademola Lookman) for foul on Tom Cairney by Saïd Benrahma
+## 249                                      Penalty awarded (scored by Ivan Cavaleiro) for foul on Bobby De Cordova-Reid by Christian Fuchs
+## 250                                      Penalty review rejected by referee Andre Marriner following Fabinho challenge on Ivan Cavaleiro
+## 251                                                           Adam Lallana goal disallowed for handball in the build-up by Danny Welbeck
+## 252                                Joachim Andersen sent off for denying a goal-scoring opportunity following challenge on Callum Wilson
+## 253                                                               Goal (scored by Theo Walcott) disallowed for offside against Che Adams
+## 254                                                                               Tomas Soucek sent off for elbow on Aleksandar Mitrovic
+## 255                                                               Josh Maja goal disallowed for handball in the build-up by Mario Lemina
+## 256                                                        Luke Ayling goal disallowed for offside against Tyler Roberts in the build-up
+## 257                                                            Penalty cancelled. Mario Lemina adjudged not to have fouled Ollie Watkins
+## 258                                                      Willian Jose goal disallowed for offside in the build-up against Daniel Podence
+## 259                                                        Dani Ceballos goal disallowed for offside in the build-up against Bukayo Saka
+## 260                                             Penalty awarded (scored by Billy Sharp) for foul on Jack Robinson by Aleksandar Mitrovic
+## 261           Penalty awarded (scored by Sander Berge) for foul on Oliver McBurnie by Fabinho. Factual decision on where foul took place
+## 262                                                                                            Mohamed Salah goal disallowed for offside
+## 263                                                                                John Lundstram sent off for challenge on Joel Veltman
+## 264                                                           Penalty awarded (scored by Billy Sharp) for handball by Federico Fernandez
+## 265                                                           Penalty for Ben Chilwell's challenge on Chris Basham cancelled for offside
+## 266                                                   Penalty awarded (scored by Jorginho) for Aaron Ramsdale's challenge on Timo Werner
+## 267                                               Penalty cancelled after Craig Dawson ruled offside before being fouled by Edna Stevens
+## 268                                                                       Phil Jagielka sent off for professional foul on Anwar El Ghazi
+## 269                                                                                              Jakub Moder goal disallowed for offside
+## 270                                                                                            Son Heung-Min goal disallowed for offside
+## 271                                                 Bobby Decordova-Reid goal disallowed for foul in the build-up by Aleksandar Mitrovic
+## 272                                                                         Ezri Konsa own goal disallowed for offside against Che Adams
+## 273                                                                         John McGinn goal disallowed for offside against Ross Barkley
+## 274                                                            Penalty rescinded after Solly March adjudged not to have fouled Trezeguet
+## 275                                                                                            Ollie Watkins goal disallowed for offside
+## 276                                                                             Jake Livermore sent off for high tackle on Jack Grealish
+## 277                                                                                             Ollie Watkins goal ruled out for offside
+## 278                              Penalty review rejected by referee Anthony Taylor following Matty Cash challenge on Patrick van Aanholt
+## 279                                                                       Phil Jagielka sent off for professional foul on Anwar El Ghazi
+## 280                                                            Penalty cancelled. Mario Lemina adjudged not to have fouled Ollie Watkins
+## 281                                                        Roberto Firmino goal ruled out for offside against Diogo Jota in the build-up
+## 282                                                                 John Stones yellow changed to red for high challenge on Jacob Ramsey
+## 283                                                                                Jamie Vardy offside in build-up to Harvey Barnes goal
+## 284                                              Penalty awarded (scored by Youri Tielemans) for foul on James Maddison by Mateusz Klich
+## 285                                                                   Penalty awarded (scored by Jamie Vardy) for handball by Max Kilman
+## 286                                      Penalty awarded (scored by Ivan Cavaleiro) for foul on Bobby De Cordova-Reid by Christian Fuchs
+## 287                                                                        Penalty cancelled for challenge on Ayoze Perez by Andre Gomes
+## 288                                                  Penalty awarded (scored by Jamie Vardy) after foul on Wesley Fofana by Serge Aurier
+## 289                                                                                            James Maddison goal ruled out for offside
+## 290                                                     Penalty cancelled as Jonny Evans' foul on Christian Pulisic was outside the area
+## 291                                               Penalty cancelled after Thiago's foul on Harvey Barnes adjudged to be outside the area
+## 292                                                           James Maddison goal allowed after incorrect offside against Daniel Amartey
+## 293                                                   Penalty cancelled as foul on Nicolas Pepe by Wilfred Ndidi deemed outside the area
+## 294                                                   Penalty awarded (scored by Alexandre Lacazette) for handball against Wilfred Ndidi
+## 295                                                                                                 Issa Diop goal ruled out for offside
+## 296                                                                                             Timo Werner goal disallowed for handball
+## 297                                                       Penalty awarded (scored by Jamie Vardy) for foul on Vardy by Toby Alderweireld
+## 298                                                                           Neal Maupay goal allowed after being ruled out for offside
+## 299                                                                        Yves Bissouma sent off for dangerous challenge on Jamal Lewis
+## 300                                                                      Penalty cancelled for challenge on Aaron Connolly by Paul Pogba
+## 301                                                                                          Marcus Rashford goal disallowed for offside
+## 302                                                         Penalty awarded (scored by Bruno Fernandes) for handball against Neal Maupay
+## 303                             Penalty awarded (scored by Harry Kane) after foul on Kane by Adam Lallana adjudged to be inside the area
+## 304 Goal for Tariq Lamptey stands after Graham Scott rejects VAR review for foul in the build-up by Solly March on Pierre-Emile Hojbjerg
+## 305                                                            Penalty rescinded after Solly March adjudged not to have fouled Trezeguet
+## 306                                                                                            Mohamed Salah goal disallowed for offside
+## 307                                                                                             Offside against Sadio Mane after scoring
+## 308                                             Penalty awarded (scored by Pascal Gross) for a foul on Danny Welbeck by Andrew Robertson
+## 309                 Penalty conceded (scored by Danny Ings) after Solly March adjudged to have fouled Kyle Walker-Peters inside the area
+## 310                                                           Adam Lallana goal disallowed for handball in the build-up by Danny Welbeck
+## 311                                                                                John Lundstram sent off for challenge on Joel Veltman
+## 312                                                          Penalty conceded (missed by Pascal Gross) for handball against Okay Yokuslu
+## 313                               Lewis Dunk goal disallowed as referee Lee Mason had blown his whistle before the ball crossed the line
+## 314                                                                                              Jakub Moder goal disallowed for offside
+## 315                                                                                            Red card for Kyle Walker-Peters rescinded
+## 316                                                              Penalty awarded (missed by Jordan Ayew) for handball by Victor Lindelof
+## 317                                                           Penalty retaken (scored by Wilfried Zaha) for encroachment by David de Gea
+## 318                                                                    Penalty awarded (scored by Richarlison) for handball by Joel Ward
+## 319                                                                                          Patrick Bamford goal disallowed for offside
+## 320                                                                                   Aboubakar Kamara sent off for foul on Eberechi Eze
+## 321                                                         Penalty for Crystal Palace cancelled for offside against Patrick van Aanholt
+## 322                                                                           Luka Milivojevic sent off for a challenge on Joao Moutinho
+## 323                                                                        Matheus Pereira sent off for challenge on Patrick van Aanholt
+## 324                              Penalty review rejected by referee Anthony Taylor following Matty Cash challenge on Patrick van Aanholt
+## 325                                                   Penalty conceded (scored by Luka Milivojevic) for handball against Darnell Furlong
+## 326                                                       Goal for Romain Saiss disallowed for offside in the build-up by Daniel Podence
+## 327                                              Penalty awarded (scored by Youri Tielemans) for foul on James Maddison by Mateusz Klich
+## 328                                                                                          Patrick Bamford goal disallowed for offside
+## 329                                                                                 Nicolas Pepe sent off for headbutt on Ezgjan Alioski
+## 330                                                       Penalty retaken (scored by Mateusz Klich) for encroachment by Lukasz Fabianski
+## 331                                                          Penalty cancelled after Liam Cooper adjudged not to have fouled Bukayo Saka
+## 332                                                      Penalty cancelled after Diego Llorente adjudged not to have fouled Nathan Tella
+## 333                                                        Luke Ayling goal disallowed for offside against Tyler Roberts in the build-up
+## 334                                                     Liam Cooper card upgraded from yellow to red for high challenge on Gabriel Jesus
+## 335                                                           Penalty awarded (missed by Kevin De Bruyne) for handball against Joe Gomez
+## 336                                                                        Aymeric Laporte goal disallowed for handball by Gabriel Jesus
+## 337                                         Bailey Peacock-Farrell own goal disallowed for offside in the build-up against Gabriel Jesus
+## 338                                                                                Penalty cancelled for offside against Marcus Rashford
+## 339                                                           Ilkay Gundogan goal awarded after incorrect offside against Bernardo Silva
+## 340                                                                                   Gabriel Jesus goal allowed after incorrect offside
+## 341                                                     Liam Cooper card upgraded from yellow to red for high challenge on Gabriel Jesus
+## 342                                                                 John Stones yellow changed to red for high challenge on Jacob Ramsey
+## 343                                            Penalty awarded (scored by Joelinton) after incorrect offside against Allan Saint-Maximin
+## 344                                                              Penalty awarded (missed by Jordan Ayew) for handball by Victor Lindelof
+## 345                                                           Penalty retaken (scored by Wilfried Zaha) for encroachment by David de Gea
+## 346                                                                      Penalty cancelled for challenge on Aaron Connolly by Paul Pogba
+## 347                                                                                          Marcus Rashford goal disallowed for offside
+## 348                                                         Penalty awarded (scored by Bruno Fernandes) for handball against Neal Maupay
+## 349                                                                         Bruno Fernandes goal ruled out for offside against Juan Mata
+## 350                                               Penalty awarded (missed by Bruno Fernandes) for foul on Marcus Rashford by Jamal Lewis
+## 351                                              WBA penalty cancelled after Bruno Fernandes adjudged not to have fouled Conor Gallagher
+## 352                                                       Penalty retake (scored by Bruno Fernandes) after encroachment by Sam Johnstone
+## 353                                                                                Penalty cancelled for offside against Marcus Rashford
+## 354                Man United free-kick and Robbie Brady red-card review cancelled for foul in the build-up by Luke Shaw, who was booked
+## 355                                                 Penalty cancelled after Kayne Ramsay's foul on Edinson Cavani ruled outside the area
+## 356                                                                                            Goal for Che Adams disallowed for offside
+## 357                                                                Jan Bednarek sent off for denying an obvious goal-scoring opportunity
+## 358                                                         Penalty cancelled after Semi Ajayi adjudged not to have fouled Harry Maguire
+## 359                                                                      Penalty review rejected for handball against Callum Hudson-Odoi
+## 360                                                           Edinson Cavani goal ruled out for foul on Son Heung-Min by Scott McTominay
+## 361                                                                 Penalty cancelled for challenge on Nathaniel Phillips by Eric Bailly
+## 362                        Penalty awarded (missed by Juan Mata but scored on the rebound) for foul on Donny van de Beek by Romain Saiss
+## 363                                                                           Neal Maupay goal allowed after being ruled out for offside
+## 364                                                                        Yves Bissouma sent off for dangerous challenge on Jamal Lewis
+## 365                                                                  Penalty awarded (scored by Callum Wilson) for handball by Eric Dier
+## 366                                                                         Bruno Fernandes goal ruled out for offside against Juan Mata
+## 367                                               Penalty awarded (missed by Bruno Fernandes) for foul on Marcus Rashford by Jamal Lewis
+## 368                                Joachim Andersen sent off for denying a goal-scoring opportunity following challenge on Callum Wilson
+## 369                                                           Penalty awarded (scored by Billy Sharp) for handball by Federico Fernandez
+## 370                                                               Penalty awarded (scored by Jesse Lingard) for handball by Ciaran Clark
+## 371                                                                                           Callum Wilson goal disallowed for handball
+## 372                                            Penalty awarded (scored by Joelinton) after incorrect offside against Allan Saint-Maximin
+## 373                                                                                            Red card for Kyle Walker-Peters rescinded
+## 374                                                             Goal (scored by Harry Kane) disallowed for offside against Son Heung-Min
+## 375                                                                  Penalty awarded (scored by Danny Ings) for handball by Matt Doherty
+## 376                                                                         Ezri Konsa own goal disallowed for offside against Che Adams
+## 377                 Penalty conceded (scored by Danny Ings) after Solly March adjudged to have fouled Kyle Walker-Peters inside the area
+## 378                                                               Goal (scored by Theo Walcott) disallowed for offside against Che Adams
+## 379                                                 Penalty cancelled after Kayne Ramsay's foul on Edinson Cavani ruled outside the area
+## 380                                                                                            Goal for Che Adams disallowed for offside
+## 381                                                                Jan Bednarek sent off for denying an obvious goal-scoring opportunity
+## 382                                                      Penalty cancelled after Diego Llorente adjudged not to have fouled Nathan Tella
+## 383                                                      Michael Keane goal disallowed for offside in the build-up against Mason Holgate
+## 384                                                Penalty awarded (scored by Chris Wood) for foul on Erik Pieters by Kyle Walker-Peters
+## 385                                     Son Heung-Min goal disallowed for offside against Lucas Moura in the goalkeeper's line of vision
+## 386             Penalty awarded (scored by Son Heung-Min) after foul by Moussa Djenepo on Sergio Reguilon adjudged to be inside the area
+## 387                                  Yellow card for Tomas Soucek switched to Andriy Yarmolenko due to mistaken identity by the referee.
+## 388                                                                                Jamie Vardy offside in build-up to Harvey Barnes goal
+## 389                                                                                  Diojo Jota goal disallowed for a foul by Sadio Mane
+## 390                                                 Penalty awarded (missed by Ademola Lookman) for foul on Tom Cairney by Saïd Benrahma
+## 391                                                                                            Ollie Watkins goal disallowed for offside
+## 392                                                       Penalty retaken (scored by Mateusz Klich) for encroachment by Lukasz Fabianski
+## 393                                                                               Tomas Soucek sent off for elbow on Aleksandar Mitrovic
+## 394                                               Penalty cancelled after Craig Dawson ruled offside before being fouled by Edna Stevens
+## 395                                                                               Goal for Jesse Lingard allowed after incorrect offside
+## 396                                                                                                 Issa Diop goal ruled out for offside
+## 397                                                               Penalty awarded (scored by Jesse Lingard) for handball by Ciaran Clark
+## 398                                                                 Fabian Balbuena yellow card upgraded to red for foul on Ben Chilwell
+## 399                                                             Goal (scored by Harry Kane) disallowed for offside against Son Heung-Min
+## 400                                                                  Penalty awarded (scored by Danny Ings) for handball by Matt Doherty
+## 401                                                                  Penalty awarded (scored by Callum Wilson) for handball by Eric Dier
+## 402                             Penalty awarded (scored by Harry Kane) after foul on Kane by Adam Lallana adjudged to be inside the area
+## 403 Goal for Tariq Lamptey stands after Graham Scott rejects VAR review for foul in the build-up by Solly March on Pierre-Emile Hojbjerg
+## 404                                                                        Aymeric Laporte goal disallowed for handball by Gabriel Jesus
+## 405                                                  Penalty awarded (scored by Jamie Vardy) after foul on Wesley Fofana by Serge Aurier
+## 406                                                                                            James Maddison goal ruled out for offside
+## 407                                                                            Son Heung-Min goal disallowed for offside in the build-up
+## 408                                                         Mohamed Salah goal ruled out for handball in the build-up by Roberto Firmino
+## 409                                                                               Goal for Jesse Lingard allowed after incorrect offside
+## 410                                                               Josh Maja goal disallowed for handball in the build-up by Mario Lemina
+## 411                                                           Edinson Cavani goal ruled out for foul on Son Heung-Min by Scott McTominay
+## 412                                     Son Heung-Min goal disallowed for offside against Lucas Moura in the goalkeeper's line of vision
+## 413             Penalty awarded (scored by Son Heung-Min) after foul by Moussa Djenepo on Sergio Reguilon adjudged to be inside the area
+## 414                                                                                            Son Heung-Min goal disallowed for offside
+## 415                                                       Penalty awarded (scored by Jamie Vardy) for foul on Vardy by Toby Alderweireld
+## 416                                                       Goal for Romain Saiss disallowed for offside in the build-up by Daniel Podence
+## 417                                                         Penalty for Crystal Palace cancelled for offside against Patrick van Aanholt
+## 418                                                                           Luka Milivojevic sent off for a challenge on Joao Moutinho
+## 419                                                                   Penalty awarded (scored by Jamie Vardy) for handball by Max Kilman
+## 420                                                                Penalty cancelled, Sadio Mane adjudged not to have fouled Conor Coady
+## 421                                                                         Penalty cancelled for challenge on Pedro Neto by Reece James
+## 422                                                  Bukayo Saka goal disallowed for offside in the build-up against Alexandre Lacazette
+## 423                                                                                   Gabriel Jesus goal allowed after incorrect offside
+## 424                                                      Willian Jose goal disallowed for offside in the build-up against Daniel Podence
+## 425                                                                                              Matej Vydra goal disallowed for offside
+## 426                        Penalty awarded (missed by Juan Mata but scored on the rebound) for foul on Donny van de Beek by Romain Saiss
+## 427                                                                         John McGinn goal disallowed for offside against Ross Barkley
+## 428                                                                                 Nicolas Pepe sent off for headbutt on Ezgjan Alioski
+## 429                                                                         Granit Xhaka sent off for violent conduct on Ashley Westwood
+## 430                                                                                   Tammy Abraham goal awarded after incorrect offside
+## 431                                                  Bukayo Saka goal disallowed for offside in the build-up against Alexandre Lacazette
+## 432                                                          Penalty cancelled after Liam Cooper adjudged not to have fouled Bukayo Saka
+## 433                                                   Penalty cancelled as foul on Nicolas Pepe by Wilfred Ndidi deemed outside the area
+## 434                                                   Penalty awarded (scored by Alexandre Lacazette) for handball against Wilfred Ndidi
+## 435                                                                     Penalty and red card for handball against Erik Pieters cancelled
+## 436                                                        Dani Ceballos goal disallowed for offside in the build-up against Bukayo Saka
+## 437                                                           Arsenal penalty rescinded for offside in the build-up against Nicolas Pepe
+## 438                                                                                        Christian Pulisic goal disallowed for offside
+## 439                                    Andreas Christensen sent off for denying a goal-scoring opportunity when bringing down Sadio Mane
+## 440                                                                       Jordan Henderson goal ruled out for offside against Sadio Mane
+## 441           Penalty awarded (scored by Sander Berge) for foul on Oliver McBurnie by Fabinho. Factual decision on where foul took place
+## 442                                                                                            Mohamed Salah goal disallowed for offside
+## 443                                                                                  Diojo Jota goal disallowed for a foul by Sadio Mane
+## 444                                                           Penalty awarded (missed by Kevin De Bruyne) for handball against Joe Gomez
+## 445                                                                                            Mohamed Salah goal disallowed for offside
+## 446                                                                                             Offside against Sadio Mane after scoring
+## 447                                             Penalty awarded (scored by Pascal Gross) for a foul on Danny Welbeck by Andrew Robertson
+## 448                                                                Penalty cancelled, Sadio Mane adjudged not to have fouled Conor Coady
+## 449                                      Penalty review rejected by referee Andre Marriner following Fabinho challenge on Ivan Cavaleiro
+## 450                                                                            Son Heung-Min goal disallowed for offside in the build-up
+## 451                                                         Mohamed Salah goal ruled out for handball in the build-up by Roberto Firmino
+## 452                                               Penalty cancelled after Thiago's foul on Harvey Barnes adjudged to be outside the area
+## 453                                                           James Maddison goal allowed after incorrect offside against Daniel Amartey
+## 454                                 Penalty overturn review rejected after Trent Alexander-Arnold had brought down Dominic Calvert-Lewin
+## 455                                                                                              Timo Werner goal disallowed for offside
+## 456                                                        Roberto Firmino goal ruled out for offside against Diogo Jota in the build-up
+## 457                                                                                           Callum Wilson goal disallowed for handball
+## 458                                                                 Penalty cancelled for challenge on Nathaniel Phillips by Eric Bailly
+## 459                                                            Dominic Calvert-Lewin goal awarded after originally ruled out for offside
+## 460                                              WBA penalty cancelled after Bruno Fernandes adjudged not to have fouled Conor Gallagher
+## 461                                                       Penalty retake (scored by Bruno Fernandes) after encroachment by Sam Johnstone
+## 462                                                                        Matheus Pereira sent off for challenge on Patrick van Aanholt
+## 463                                                                             Jake Livermore sent off for high tackle on Jack Grealish
+## 464                                                                                             Ollie Watkins goal ruled out for offside
+## 465                                                           Ilkay Gundogan goal awarded after incorrect offside against Bernardo Silva
+## 466                                                         Penalty cancelled after Semi Ajayi adjudged not to have fouled Harry Maguire
+## 467                                                     Semi Ajayi sent off for handball and denying an obvious goal-scoring opportunity
+## 468                                                          Penalty conceded (missed by Pascal Gross) for handball against Okay Yokuslu
+## 469                               Lewis Dunk goal disallowed as referee Lee Mason had blown his whistle before the ball crossed the line
+## 470                                                   Penalty conceded (scored by Luka Milivojevic) for handball against Darnell Furlong
+##        type min
+## 1   AGAINST  27
+## 2       FOR  42
+## 3       FOR  78
+## 4       FOR  80
+## 5       FOR  63
+## 6       FOR   8
+## 7       FOR  54
+## 8       FOR  24
+## 9   AGAINST  58
+## 10      FOR  75
+## 11      FOR  79
+## 12      FOR  57
+## 13  AGAINST  58
+## 14      FOR  43
+## 15      FOR  25
+## 16      FOR  41
+## 17      FOR  23
+## 18      FOR  25
+## 19      FOR  55
+## 20      FOR  77
+## 21      FOR  52
+## 22      FOR  92
+## 23  AGAINST  91
+## 24      FOR  55
+## 25  AGAINST  45
+## 26      FOR  87
+## 27      FOR  32
+## 28      FOR  83
+## 29  AGAINST  43
+## 30  AGAINST  15
+## 31      FOR  85
+## 32      FOR  65
+## 33      FOR  72
+## 34      FOR  74
+## 35  AGAINST   7
+## 36      FOR  47
+## 37  AGAINST  55
+## 38      FOR  25
+## 39  AGAINST  80
+## 40      FOR  76
+## 41  AGAINST  36
+## 42      FOR  80
+## 43      FOR  11
+## 44      FOR  22
+## 45      FOR  57
+## 46  AGAINST  45
+## 47      FOR  33
+## 48  AGAINST  57
+## 49      FOR  70
+## 50      FOR  28
+## 51      FOR  40
+## 52      FOR  52
+## 53      FOR  25
+## 54      FOR  42
+## 55  AGAINST  12
+## 56      FOR  52
+## 57      FOR  15
+## 58  AGAINST  63
+## 59      FOR  90
+## 60  AGAINST  65
+## 61  AGAINST  28
+## 62  AGAINST  40
+## 63      FOR  57
+## 64      FOR  94
+## 65      FOR  27
+## 66  AGAINST  43
+## 67      FOR  43
+## 68  AGAINST  51
+## 69      FOR  42
+## 70      FOR  45
+## 71  AGAINST  25
+## 72      FOR  90
+## 73      FOR  51
+## 74  AGAINST  16
+## 75      FOR  64
+## 76      FOR  80
+## 77      FOR  12
+## 78  AGAINST  80
+## 79  AGAINST  34
+## 80      FOR  94
+## 81      FOR  63
+## 82  AGAINST  90
+## 83      FOR  44
+## 84  AGAINST   0
+## 85  AGAINST  49
+## 86  AGAINST  13
+## 87      FOR  75
+## 88      FOR  90
+## 89      FOR  16
+## 90  AGAINST  64
+## 91      FOR  60
+## 92      FOR  89
+## 93  AGAINST  45
+## 94  AGAINST  62
+## 95  AGAINST  24
+## 96      FOR  33
+## 97  AGAINST  38
+## 98      FOR  45
+## 99      FOR  91
+## 100 AGAINST  45
+## 101 AGAINST  32
+## 102     FOR  90
+## 103 AGAINST  53
+## 104     FOR  86
+## 105 AGAINST  90
+## 106 AGAINST  23
+## 107     FOR  21
+## 108     FOR  25
+## 109     FOR  29
+## 110 AGAINST  12
+## 111 AGAINST  72
+## 112     FOR  38
+## 113     FOR   0
+## 114     FOR  45
+## 115 AGAINST  77
+## 116 AGAINST  90
+## 117 AGAINST  71
+## 118     FOR   7
+## 119     FOR  58
+## 120 AGAINST  32
+## 121 AGAINST  83
+## 122     FOR  29
+## 123 AGAINST  63
+## 124 AGAINST  65
+## 125     FOR  78
+## 126 AGAINST  75
+## 127     FOR   2
+## 128 AGAINST  78
+## 129     FOR  34
+## 130 AGAINST  94
+## 131     FOR  12
+## 132 AGAINST  75
+## 133 AGAINST  92
+## 134     FOR  13
+## 135 AGAINST  25
+## 136     FOR  17
+## 137     FOR  84
+## 138     FOR  58
+## 139 AGAINST  76
+## 140     FOR  76
+## 141 AGAINST  22
+## 142 AGAINST  57
+## 143 AGAINST  90
+## 144     FOR  71
+## 145 AGAINST  57
+## 146 AGAINST  94
+## 147 AGAINST  77
+## 148 AGAINST  27
+## 149 AGAINST  76
+## 150 AGAINST  77
+## 151     FOR  67
+## 152 AGAINST  84
+## 153     FOR  45
+## 154     FOR  62
+## 155 AGAINST  55
+## 156 AGAINST  77
+## 157     FOR  77
+## 158     FOR  34
+## 159     FOR  77
+## 160 AGAINST  80
+## 161     FOR  51
+## 162 AGAINST  68
+## 163 AGAINST  52
+## 164 AGAINST   2
+## 165 AGAINST  25
+## 166 AGAINST  42
+## 167     FOR  76
+## 168 AGAINST  11
+## 169 AGAINST  45
+## 170     FOR   7
+## 171 AGAINST  47
+## 172     FOR  53
+## 173 AGAINST  86
+## 174     FOR  27
+## 175 AGAINST  17
+## 176 AGAINST  87
+## 177     FOR  36
+## 178 AGAINST  89
+## 179 AGAINST  67
+## 180 AGAINST  52
+## 181     FOR  76
+## 182 AGAINST  90
+## 183 AGAINST  79
+## 184 AGAINST  78
+## 185     FOR  45
+## 186 AGAINST  34
+## 187     FOR  45
+## 188 AGAINST  52
+## 189 AGAINST  60
+## 190 AGAINST  70
+## 191     FOR  74
+## 192 AGAINST  76
+## 193 AGAINST   8
+## 194 AGAINST  54
+## 195 AGAINST  29
+## 196     FOR  90
+## 197 AGAINST  74
+## 198 AGAINST  51
+## 199 AGAINST  42
+## 200 AGAINST  21
+## 201 AGAINST  25
+## 202 AGAINST  42
+## 203 AGAINST  45
+## 204     FOR  68
+## 205     FOR  65
+## 206 AGAINST  44
+## 207     FOR  77
+## 208 AGAINST  25
+## 209 AGAINST  41
+## 210 AGAINST  29
+## 211 AGAINST  74
+## 212 AGAINST  33
+## 213 AGAINST  85
+## 214 AGAINST  76
+## 215     FOR  49
+## 216 AGAINST  33
+## 217 AGAINST   7
+## 218     FOR  77
+## 219     FOR  58
+## 220 NEUTRAL   0
+## 221     FOR  28
+## 222     FOR  85
+## 223     FOR   8
+## 224 AGAINST  50
+## 225     FOR  31
+## 226     FOR  41
+## 227     FOR  90
+## 228 AGAINST  63
+## 229     FOR  81
+## 230     FOR  81
+## 231 AGAINST  25
+## 232     FOR  51
+## 233 AGAINST  45
+## 234     FOR  63
+## 235     FOR  81
+## 236     FOR  85
+## 237 AGAINST  39
+## 238     FOR  11
+## 239     FOR  58
+## 240     FOR  15
+## 241 AGAINST  24
+## 242     FOR  79
+## 243 AGAINST  60
+## 244 AGAINST  35
+## 245 AGAINST  56
+## 246 AGAINST  85
+## 247 AGAINST  86
+## 248     FOR  95
+## 249     FOR  35
+## 250 AGAINST  16
+## 251     FOR  49
+## 252 AGAINST  62
+## 253     FOR  85
+## 254     FOR  90
+## 255 AGAINST  64
+## 256     FOR   8
+## 257     FOR  45
+## 258     FOR  45
+## 259     FOR  40
+## 260     FOR  85
+## 261     FOR  10
+## 262     FOR  62
+## 263 AGAINST  40
+## 264     FOR  73
+## 265 AGAINST  11
+## 266 AGAINST  58
+## 267     FOR   5
+## 268 AGAINST  57
+## 269     FOR  56
+## 270     FOR  50
+## 271     FOR  56
+## 272     FOR   3
+## 273 AGAINST   1
+## 274 AGAINST  92
+## 275 AGAINST  92
+## 276     FOR  36
+## 277 AGAINST  72
+## 278     FOR  24
+## 279     FOR  57
+## 280 AGAINST  45
+## 281     FOR  45
+## 282     FOR  42
+## 283 AGAINST  90
+## 284     FOR  88
+## 285     FOR  14
+## 286 AGAINST  35
+## 287 AGAINST  81
+## 288     FOR  45
+## 289 AGAINST  47
+## 290     FOR  39
+## 291 AGAINST  76
+## 292     FOR  79
+## 293     FOR  14
+## 294 AGAINST  45
+## 295     FOR  54
+## 296     FOR  35
+## 297     FOR  16
+## 298     FOR   8
+## 299 AGAINST  86
+## 300 AGAINST  48
+## 301     FOR  52
+## 302 AGAINST  90
+## 303 AGAINST  11
+## 304     FOR  56
+## 305     FOR  92
+## 306     FOR  35
+## 307     FOR  85
+## 308     FOR  92
+## 309 AGAINST  80
+## 310 AGAINST  49
+## 311     FOR  40
+## 312     FOR  17
+## 313 AGAINST  37
+## 314 AGAINST  56
+## 315 AGAINST  51
+## 316     FOR  70
+## 317     FOR  73
+## 318 AGAINST  41
+## 319     FOR  19
+## 320     FOR  86
+## 321 AGAINST  38
+## 322 AGAINST  85
+## 323     FOR  35
+## 324 AGAINST  24
+## 325     FOR  34
+## 326     FOR  54
+## 327 AGAINST  88
+## 328 AGAINST  19
+## 329     FOR  51
+## 330     FOR   6
+## 331     FOR  35
+## 332     FOR  33
+## 333 AGAINST   8
+## 334 AGAINST  45
+## 335     FOR  41
+## 336 AGAINST  27
+## 337 AGAINST  77
+## 338     FOR  38
+## 339     FOR  20
+## 340     FOR  90
+## 341     FOR  45
+## 342 AGAINST  42
+## 343 AGAINST  45
+## 344 AGAINST  70
+## 345 AGAINST  73
+## 346     FOR  48
+## 347 AGAINST  52
+## 348     FOR  90
+## 349 AGAINST  19
+## 350     FOR  54
+## 351     FOR  47
+## 352     FOR  56
+## 353 AGAINST  38
+## 354 NEUTRAL   0
+## 355 AGAINST  42
+## 356     FOR  53
+## 357     FOR  53
+## 358 AGAINST  64
+## 359 AGAINST  15
+## 360 AGAINST  33
+## 361     FOR  27
+## 362     FOR  45
+## 363 AGAINST   8
+## 364     FOR  86
+## 365     FOR  90
+## 366     FOR  19
+## 367 AGAINST  54
+## 368     FOR  62
+## 369 AGAINST  73
+## 370 AGAINST  76
+## 371 AGAINST  92
+## 372     FOR  45
+## 373     FOR  51
+## 374     FOR   3
+## 375     FOR  90
+## 376 AGAINST   3
+## 377     FOR  80
+## 378 AGAINST  85
+## 379     FOR  42
+## 380 AGAINST  53
+## 381 AGAINST  53
+## 382 AGAINST  33
+## 383     FOR  25
+## 384 AGAINST   8
+## 385     FOR  74
+## 386 AGAINST  86
+## 387    None   0
+## 388     FOR  90
+## 389     FOR  82
+## 390 AGAINST  95
+## 391     FOR  92
+## 392 AGAINST   6
+## 393 AGAINST  90
+## 394 AGAINST   5
+## 395     FOR  47
+## 396 AGAINST  54
+## 397     FOR  76
+## 398 AGAINST  79
+## 399 AGAINST   3
+## 400 AGAINST  90
+## 401 AGAINST  90
+## 402     FOR  11
+## 403 AGAINST  56
+## 404     FOR  27
+## 405 AGAINST  45
+## 406     FOR  47
+## 407 AGAINST   3
+## 408     FOR  56
+## 409 AGAINST  47
+## 410     FOR  64
+## 411     FOR  33
+## 412 AGAINST  74
+## 413     FOR  86
+## 414 AGAINST  50
+## 415 AGAINST  16
+## 416 AGAINST  54
+## 417     FOR  38
+## 418     FOR  85
+## 419 AGAINST  14
+## 420 AGAINST  44
+## 421 AGAINST  81
+## 422     FOR   9
+## 423 AGAINST  90
+## 424 AGAINST  45
+## 425     FOR  50
+## 426 AGAINST  45
+## 427     FOR   1
+## 428 AGAINST  51
+## 429 AGAINST  58
+## 430 AGAINST  85
+## 431 AGAINST   9
+## 432 AGAINST  35
+## 433 AGAINST  14
+## 434     FOR  45
+## 435 AGAINST  85
+## 436 AGAINST  40
+## 437 AGAINST  51
+## 438     FOR  60
+## 439     FOR  45
+## 440 AGAINST  90
+## 441 AGAINST  10
+## 442 AGAINST  62
+## 443 AGAINST  82
+## 444 AGAINST  41
+## 445 AGAINST  35
+## 446 AGAINST  85
+## 447 AGAINST  92
+## 448     FOR  44
+## 449     FOR  16
+## 450     FOR   3
+## 451 AGAINST  56
+## 452     FOR  76
+## 453 AGAINST  79
+## 454 AGAINST  81
+## 455     FOR  24
+## 456 AGAINST  45
+## 457     FOR  92
+## 458 AGAINST  27
+## 459 AGAINST  31
+## 460 AGAINST  47
+## 461 AGAINST  56
+## 462 AGAINST  35
+## 463 AGAINST  36
+## 464     FOR  72
+## 465 AGAINST  20
+## 466     FOR  64
+## 467 AGAINST  28
+## 468 AGAINST  17
+## 469     FOR  37
+## 470 AGAINST  34</code></pre>
 <p>De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.</p>
 <p><strong>Tal vez agregar al campeón de cada temporada, nos podría servir como indicador de algo en cuanto a métricas</strong></p>
 

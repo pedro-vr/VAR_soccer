@@ -460,15 +460,9 @@ aux_2 <- c(aux_2,length(details_data_20_21))
 
 for(t in 1:(length(aux_1)-1)){
   cont <- 0
-  #cont_1 <- 1
   for(u in seq(aux_1[t],aux_1[t+1])){
     if(details_data_19_20[u] == "Incident:")
       cont <- cont + 1
-    #if(details_data_19_20[u] == "Incident:" & details_data_19_20[u+2] == "Incident:"){
-      
-    #} else {
-      
-    #}
   }
   cuenta_equipo_19_20 <- c(cuenta_equipo_19_20,cont)
 }
@@ -556,16 +550,110 @@ for(ac in 1:length(min_incident_20_21)){
     min_inc_20_21 <- c(min_inc_20_21,as.integer(substr(min_incident_20_21[ac],1,espacio-3)))
 }
 
+juegos <- NULL
+localia <- NULL
+fecha <- NULL
+suma <- 0
+
+for(aj in 1:(length(aux_1)-1)){
+  vector1 <- NULL
+  for(af in seq(aux_1[aj],aux_1[aj+1])){
+    if(details_data_19_20[af] == "Game:"){
+      vector1 <- c(vector1,af)
+    }
+  }
+  vector1 <- c(vector1,aux_1[aj+1])
+  cont_total <- NULL
+  for(ag in 1:(length(vector1)-1)){
+    cont_inc <- 0
+    for(ah in seq(vector1[ag],vector1[ag+1])){
+      if(details_data_19_20[ah] == "Incident:"){
+        cont_inc <- cont_inc + 1
+      }
+    }
+    cont_total <- c(cont_total,cont_inc)
+  }
+  for(ai in 1:length(cont_total)){
+    parentesis_1 <- str_locate(game_detail_19_20[suma+ai],"\\(")[1]
+    parentesis_2 <- str_locate(game_detail_19_20[suma+ai],"\\)")[1]
+    punto_coma <- str_locate(game_detail_19_20[suma+ai],";")[1]
+    juegos <- c(juegos,rep(substr(game_detail_19_20[suma+ai],1,parentesis_1-2),cont_total[ai]))
+    localia <- c(localia,rep(substr(game_detail_19_20[suma+ai],parentesis_1+1,punto_coma-1),cont_total[ai]))
+    fecha <- c(fecha,rep(substr(game_detail_19_20[suma+ai],punto_coma+2,parentesis_2-1),cont_total[ai]))
+  }
+  suma <- suma + length(cont_total)
+}
+
+suma1 <- 0
+
+for(ak in 1:(length(aux_2)-1)){
+  vector1 <- NULL
+  for(al in seq(aux_2[ak],aux_2[ak+1])){
+    if(details_data_20_21[al] == "Game:"){
+      vector1 <- c(vector1,al)
+    }
+  }
+  vector1 <- c(vector1,aux_2[ak+1])
+  cont_total <- NULL
+  for(am in 1:(length(vector1)-1)){
+    cont_inc <- 0
+    for(an in seq(vector1[am],vector1[am+1])){
+      if(details_data_20_21[an] == "Incident:"){
+        cont_inc <- cont_inc + 1
+      }
+    }
+    cont_total <- c(cont_total,cont_inc)
+  }
+  for(ao in 1:length(cont_total)){
+    parentesis_1 <- str_locate(game_detail_20_21[suma1+ao],"\\(")[1]
+    parentesis_2 <- str_locate(game_detail_20_21[suma1+ao],"\\)")[1]
+    punto_coma <- str_locate(game_detail_20_21[suma1+ao],";")[1]
+    juegos <- c(juegos,rep(substr(game_detail_20_21[suma1+ao],1,parentesis_1-2),cont_total[ao]))
+    localia <- c(localia,rep(substr(game_detail_20_21[suma1+ao],parentesis_1+1,punto_coma-1),cont_total[ao]))
+    fecha <- c(fecha,rep(substr(game_detail_20_21[suma1+ao],punto_coma+2,parentesis_2-1),cont_total[ao]))
+  }
+  suma1 <- suma1 + length(cont_total)
+}
+
 var_details <- data.frame("season" = c(rep("19/20",length(incident_detail_19_20)),
                                        rep("20/21",length(incident_detail_20_21))),
-                          "team" = c(teams_var_detail_19_20,teams_var_detail_20_21),
+                          "team1" = c(teams_var_detail_19_20,teams_var_detail_20_21),
+                          "team2" = juegos, "home/away" = localia, "date" = fecha,
                           "incident" = c(desc_incident_19_20,desc_incident_20_21),
                           "type" = c(type_incident_19_20,type_incident_20_21),
                           "min" = c(min_inc_19_20,min_inc_20_21))
 ```
 
 ```{r}
-head(var_details,3)
+head(var_details,5)
+```
+
+```{r,include=FALSE}
+team1 <- NULL
+team2 <- NULL
+for(ap in 1:dim(var_details)[1]){
+  equipo1 <- as.character(var_details$team1[ap])
+  equipo2 <- as.character(var_details$team2[ap])
+  local_eq <- as.character(var_details$home.away[ap])
+  if(local_eq == 'H'){
+    team1 <- c(team1,equipo1)
+    team2 <- c(team2,equipo2)
+  } else {
+    team1 <- c(team1,equipo2)
+    team2 <- c(team2,equipo1)
+  }
+}
+
+var_details1 <- data.frame("season" = c(rep("19/20",length(incident_detail_19_20)),
+                                       rep("20/21",length(incident_detail_20_21))),
+                          "team1" = team1,"team2" = team2, "date" = fecha,
+                          "incident" = c(desc_incident_19_20,desc_incident_20_21),
+                          "type" = c(type_incident_19_20,type_incident_20_21),
+                          "min" = c(min_inc_19_20,min_inc_20_21))
+```
+
+```{r}
+head(var_details1,5)
 ```
 
 ```{r,include=FALSE}
@@ -574,6 +662,7 @@ head(var_details,3)
 #write_csv(ovrt_df,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns.csv")
 #write_csv(ovrt_var,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/pl_overturns_var.csv")
 #write_csv(var_details,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/var_details.csv")
+#write_csv(var_details1,"/Users/pedrovela/Documentos/Git_repos/VAR_soccer/var_details1.csv")
 ```
 
 De aquí ya tenemos datos acerca de 1900 partidos de la PL desde 2016, de aquí podemos empezar a hacer análisis exploratorio.
