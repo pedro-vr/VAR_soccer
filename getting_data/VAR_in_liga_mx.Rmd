@@ -1,0 +1,399 @@
+---
+title: "VAR in Liga MX"
+author: "Pedro Alan Velázquez Romero"
+date: "5/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+#librerias a utilizar 
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
+            #       "urltools"))
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(httr)
+library(XML)
+library(rvest)
+library(xml2)
+library(tidyverse)
+library(robotstxt)
+library(urltools)
+library(XML)
+library(methods)
+```
+
+Esta es la primera versión del documento en donde se harán los cálculos para el análisis del VAR en el fútbol. A partir de aquí se va a empezar con un análisis descriptivo de los datos, además de reconocer los datos verdaderamente valiosos con los que se trabajará.
+
+El primer acercamiento por supuesto es sobre el VAR como nueva medida en el fútbol, de aquí que sale el repentino interés de querer saber lo siguiente:
+
+1. En qué fecha se implementó el VAR? A partir de ahí podemos hacer comparaciones entre métricas de equipos antes y después del VAR
+2. Si se puede conseguir datos del VAR en México entonces también podemos comparar el efecto del VAR y además el efecto del recién implementado repechaje en México
+
+Implementación del VAR en México: **2018 en el torneo Apertura como piloto, se implementó en 2019 de manera oficial**
+
+Propuestas de métricas para medir la ineficiencia/eficiencia del VAR (Arturo Brizio, presidente de la Comisión de Árbitros en México):
+
+1. La unificación de procedimientos
+2. La línea de intervención (equilibrio entre poco y nunca, solamente when necessary)
+3. Tiempo de revisión (el promedio hasta marzo 2021 es de 1.5 mins, el máximo es 9 mins)
+4. Medidas PEGII: Penal, Expulsión, Gol, Identidad errónea e Incidente no visto por el árbitro
+
+Fuente: https://www.marca.com/claro-mx/futbol/liga-mx/2021/03/25/605cfb42ca4741d5138b4612.html
+
+VAR definición: https://www.marca.com/claro-mx/futbol/liga-mx/2018/10/18/5bc8a11a268e3ebb268b45ce.html
+
+
+Si obtenemos el documento directamente de la página de GitHub de FiveThirtyEight se tienen los partidos actualizados al día.
+
+```{r}
+#al parecer aquí ya se encuentran desde 2016 hasta hoy, se actualiza cada semana
+url <- "https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv"
+football_matches <- read.csv(url,fileEncoding = 'UTF-8',skipNul = T)
+#filtramos solamente la liga mx
+liga_mx <- filter(football_matches,league == 'Mexican Primera Division Torneo Clausura' | league == 'Mexican Primera Division Torneo Apertura')
+```
+
+Las liguillas del torneo mexicano se dieron en las siguientes fechas:
+
+- Clausura 2016: 10 mayo 2017 a 28 mayo 2017
+- Apertura 2017: 22 noviembre 2017 a 10 diciembre 2017
+- Clausura 2017: 2 mayo 2018 a 20 mayo 2018
+- Apertura 2018: 28 noviembre 2018 a 16 diciembre 2018
+- Clausura 2018: 8 mayo 2019 a 26 mayo 2019
+- Apertura 2019: 27 noviembre 2019 a 29 diciembre 2019
+- Clausura 2019: Suspendido por COVID
+- Apertura 2020 (Guardianes 2020): 21 noviembre 2020 a 13 diciembre 2020
+- Clausura 2020 (Guardianes 2021): 8 mayo 2021 a 30 mayo 2021 
+
+El VAR inicia oficialmente en México en el año 2019 (Clausura 2018)
+
+```{r}
+#Empezamos el proceso para crear una columna en donde diga si el partido es temporada
+#regular o liguilla
+
+#función con case of aquí: switch usarla aquí
+liga_mx <- liga_mx %>% mutate(reg_season = if_else(as.POSIXct(date) > as.POSIXct('2017-05-09')
+                                                   & as.POSIXct(date) < as.POSIXct('2017-05-29'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2017-11-21')
+                                                   & as.POSIXct(date) < as.POSIXct('2017-12-11'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2018-05-01')
+                                                   & as.POSIXct(date) < as.POSIXct('2018-05-21'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2018-11-27')
+                                                   & as.POSIXct(date) < as.POSIXct('2018-12-17'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2019-05-07')
+                                                   & as.POSIXct(date) < as.POSIXct('2019-05-27'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2019-11-26')
+                                                   & as.POSIXct(date) < as.POSIXct('2019-12-30'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2020-11-20')
+                                                   & as.POSIXct(date) < as.POSIXct('2020-12-14'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2021-05-07')
+                                                   & as.POSIXct(date) < as.POSIXct('2021-05-31'),1,0)))))))))
+#Creamos otra variable para determinar en qué momento inició COVID
+liga_mx <- liga_mx %>% mutate(after_covid = if_else(as.POSIXct(date) > as.POSIXct('2020-03-16'),1,0))
+#Creamos la variable que nos indica si en el partido estuvo presente el VAR
+liga_mx <- liga_mx %>% mutate(is_VAR = if_else(format(as.Date(date),"%Y") >= 2019,1,0))
+```
+
+```{r,include=FALSE}
+head(liga_mx,3)
+arrange(liga_mx,desc(date))
+arrange(liga_mx,date)
+```
+
+```{r}
+#empezamos a leer el XML con los datos del año 2016
+#leemos el archivo desde el el cual vamos a obtener los datos
+clausura_2016 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/clausura_2016.html")
+#empezamos a leer el XML con los datos del año 2016
+#leemos el archivo desde el el cual vamos a obtener los datos
+apertura_2016 <- htmlParse("/Users/pedrovela/Documentos/Git_repos/VAR_soccer/apertura_2016.html")
+```
+
+```{r}
+#Empezamos el proceso para obtener los datos valiosos de todas las jornadas
+
+#Sabemos que los partidos con horarios, marcador, equipos y probabilidades
+#están en los nodos de tipo <div class="fixtures_round">... por lo tanto 
+#de aquí leemos todo
+
+#Partidos de la jornada para la clausura
+jornadas_cl <- getNodeSet(clausura_2016, "//div[@class='fixtures_round']") %>% sapply(., xmlValue)
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+fixtures_cl <- NULL
+#Vamos a hacer un loop para guardar los datos de las 17 jornadas
+for (e in 1:length(jornadas_cl)) {
+  #Guardamos cada jornada como una matriz
+  fixtures_cl <- c(fixtures_cl,str_split(jornadas_cl[e],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todas las jornadas ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+#Array en donde vamos a guardar todo
+fixtures_data_cl <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (f in 1:length(fixtures_cl)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(fixtures_cl[f])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    fixtures_data_cl <- c(fixtures_data_cl,data_trim)
+  }
+}
+
+#Empezamos el procedimiento para traernos los datos de las jornadas de la clausura
+
+#Declaramos un contador para saber en que momento estamos con la jornada 6 desfazada
+conteo_j6 <- 0
+#Creamos el vector nulo que después guardará todas las fechas
+fechas_cl <- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_cl <- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_cl <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_cl <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_cl <- NULL
+
+#Iniciamos el loop por todas las jornadas
+for (g in 1:length(fixtures_data_cl)) {
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura" & fixtures_data_cl[g + 3] != '6'){
+      #Si estamos en una jornada diferente a la 6 entonces queremos traernos las fechas 
+      #las cuales empiezan en la posición 4 a partir de que inicia una jornada ("Fixtures & Results Liga MX         Clausura")
+      inicio <- g + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato valioso (by=8) y son en 
+      #total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos como tal,
+      #por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
+      for (h in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y
+        #en formato yyyy-mm-dd
+        fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[h],4,5),"-",substr(fixtures_data_cl[h],1,2),sep = ""))
+        #guardamos el equipo local
+        local_cl <- c(local_cl,substr(fixtures_data_cl[h+1],1,str_locate(fixtures_data_cl[h+1],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[h+1],                                  str_locate(fixtures_data_cl[h+1],"-")[1]+2,str_length(fixtures_data_cl[h+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[h+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[h+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[h+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[h+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[h+7],1,2))/100)
+      }
+    #Si ya nos topamos con la jornada 6 nos aseguramos que en realidad estemos ahí
+  } else if (fixtures_data_cl[g] == "Fixtures & Results Liga MX Clausura" & fixtures_data_cl[g + 3] == '6') {
+      #Si sí estamos en la jornada 6 entonces aumentamos en 1 el contador de la jornada
+      conteo_j6 <- conteo_j6 + 1
+      #Nos fijamos si es la primera vez que nos topamos con la jornada 6 (que es el partido
+      #que se pospuso)
+      if(conteo_j6 == 1){
+        #Si sí estamos en el partido pospuesto entonces solo nos traemos una fecha la cual 
+        #está en la posición 4 a partir de que inicia la jornada ("Fixtures & Results Liga MX Clausura")
+        #nos traemos la fecha ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[g + 4],4,5),"-",substr(fixtures_data_cl[g + 4],1,2),sep = ""))
+        #guardamos el equipo local
+        local_cl <- c(local_cl,substr(fixtures_data_cl[g+5],1,str_locate(fixtures_data_cl[g+5],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[g+5],                                  str_locate(fixtures_data_cl[g+5],"-")[1]+2,str_length(fixtures_data_cl[g+5])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[g+6],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[g+6],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[g+9],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[g+10],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[g+11],1,2))/100)
+      } else {
+        #si no es la primera vez que nos topamos con la jornada 6 entonces ya se trata de la jornada 
+        #que se jugó en tiempo y forma, por lo tanto queremos las fechas a partir de la posición 4 en adelante
+        #a partir de que inicia la jornada ("Fixtures & Results Liga MX Clausura")
+        inicio <- g + 4
+        #Como en esta joranda hay un partido menos entonces solo recorremos 8x7 = 56 posiciones en total
+        for (j in seq(inicio,(inicio + 56),by=8)) {
+          #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+          #en formato yyyy-mm-dd
+          fechas_cl <- c(fechas_cl,paste("2016-",substr(fixtures_data_cl[j],4,5),"-",substr(fixtures_data_cl[j],1,2),sep = ""))
+          #guardamos el equipo local
+          local_cl <- c(local_cl,substr(fixtures_data_cl[j+1],1,str_locate(fixtures_data_cl[j+1],"-")[1]-2))
+          #guardamos el equipo visitante
+          visitante_cl <- c(visitante_cl,substr(fixtures_data_cl[j+1],                                  str_locate(fixtures_data_cl[j+1],"-")[1]+2,str_length(fixtures_data_cl[j+1])))
+          #guardamos los goles que anotó el local ya en forma de entero
+          goles_local_cl <- c(goles_local_cl,as.integer(substr(fixtures_data_cl[j+2],1,1)))
+          #guardamos los goles que anotó el visitante ya en forma de entero
+          goles_visitante_cl <- c(goles_visitante_cl,as.integer(substr(fixtures_data_cl[j+2],3,3)))
+          #guardamos la probabilidad de victoria del local en forma de decimal
+          prob_local_cl <- c(prob_local_cl,as.double(substr(fixtures_data_cl[j+5],1,2))/100)
+          #guardamos la probabilidad de empate en forma de decimal
+          prob_empate_cl <- c(prob_empate_cl,as.double(substr(fixtures_data_cl[j+6],1,2))/100)
+          #guardamos la probabilidad de victoria del visitante en forma de decimal
+          prob_visitante_cl <- c(prob_visitante_cl,as.double(substr(fixtures_data_cl[j+7],1,2))/100)
+      }
+    }
+  }
+}
+
+#Empezamos el procedimiento para leer los datos de la apertura
+
+#Partidos de la jornada para la apertura
+jornadas_ap <- getNodeSet(apertura_2016, "//div[@class='fixtures_round']") %>% sapply(., xmlValue)
+#Se va a guardar todos los datos "servibles" o "útiles" dentro de un solo array
+fixtures_ap <- NULL
+#Vamos a hacer un loop para guardar los datos de las 17 jornadas
+for (k in 1:length(jornadas_ap)) {
+  #Guardamos cada jornada como una matriz
+  fixtures_ap <- c(fixtures_ap,str_split(jornadas_ap[k],"\n",simplify = T))
+}
+
+#ya que tenemos los datos de todas las jornadas ahora nos vamos a quedar solamente 
+#con los datos útiles, para esto, hacemos un loop, vamos a trimear cada entrada 
+#y si la longitud de la entrada después de trimearla es mayor a cero entonces es un dato
+#útil y lo guardamos en un nuevo array
+
+#Array en donde vamos a guardar todo
+fixtures_data_ap <- NULL
+#Iniciamos el loop en donde vamos a guardar todos los datos
+for (l in 1:length(fixtures_ap)) {
+  #Trimeamos los datos para ver is es que hay datos útiles
+  data_trim <- str_trim(fixtures_ap[l])
+  #Si la longitud de lo trimeado es mayor a cero entonces tiene datos útiles
+  if(str_length(data_trim) > 0){
+    #Guardamos el dato útil en un array 
+    fixtures_data_ap <- c(fixtures_data_ap,data_trim)
+  }
+}
+
+#Empezamos el procedimiento para traernos los datos de las jornadas de la apertura
+
+#Creamos el vector nulo que después guardará todas las fechas
+fechas_ap <- NULL
+#Creamos el vector nulo que después guardará todos los equipos locales
+local_ap <- NULL
+#Creamos el vector nulo que después guardará todos los equipos visitantes
+visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos locales
+goles_local_ap <- NULL
+#Creamos el vector nulo que después guardará todos los goles de los equipos visitantes
+goles_visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos locales
+prob_local_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de los equipos visitantes
+prob_visitante_ap <- NULL
+#Creamos el vector nulo que después guardará todas los probabilidades de empate
+prob_empate_ap <- NULL
+
+#Iniciamos el loop por todas las jornadas
+for (m in 1:length(fixtures_data_ap)) {
+  #Primero nos fijamos en todas las jornadas menos en la 6
+  if(fixtures_data_ap[m] == "Fixtures & Results Liga MX Apertura"){
+      #Queremos traernos los datos de los partidos los cuales empiezan en la posición 4 
+      #a partir de que inicia una jornada ("Fixtures & Results Liga MX Apertura")
+      inicio <- m + 4
+      #Después de la posición 4, cada 8 posiciones nos encontramos con un dato importante  (by=8) 
+      #y son en total 9 fechas pero lo recorremos solo 8 veces ya que la primera no la recorremos 
+      #como tal, por lo tanto, son 8x8 = 64 posiciones las que recorremos en total
+      for (n in seq(inicio,(inicio + 64),by=8)) {
+        #guardamos la fecha en el vector, pero la guardamos ya con el año (paste) y sin la hora (substr) y 
+        #en formato yyyy-mm-dd
+        fechas_ap <- c(fechas_ap,paste("2016-",substr(fixtures_data_ap[n],4,5),"-",substr(fixtures_data_ap[n],1,2),sep = ""))
+        #guardamos el equipo local
+        local_ap <- c(local_ap,substr(fixtures_data_ap[n+1],1,str_locate(fixtures_data_ap[n+1],"-")[1]-2))
+        #guardamos el equipo visitante
+        visitante_ap <- c(visitante_ap,substr(fixtures_data_ap[n+1],                                  str_locate(fixtures_data_ap[n+1],"-")[1]+2,str_length(fixtures_data_ap[n+1])))
+        #guardamos los goles que anotó el local ya en forma de entero
+        goles_local_ap <- c(goles_local_ap,as.integer(substr(fixtures_data_ap[n+2],1,1)))
+        #guardamos los goles que anotó el visitante ya en forma de entero
+        goles_visitante_ap <- c(goles_visitante_ap,as.integer(substr(fixtures_data_ap[n+2],3,3)))
+        #guardamos la probabilidad de victoria del local en forma de decimal
+        prob_local_ap <- c(prob_local_ap,as.double(substr(fixtures_data_ap[n+5],1,2))/100)
+        #guardamos la probabilidad de empate en forma de decimal
+        prob_empate_ap <- c(prob_empate_ap,as.double(substr(fixtures_data_ap[n+6],1,2))/100)
+        #guardamos la probabilidad de victoria del visitante en forma de decimal
+        prob_visitante_ap <- c(prob_visitante_ap,as.double(substr(fixtures_data_ap[n+7],1,2))/100)
+    }
+  }
+}
+
+#Empezamos a unir los datos recién obtenidos de la clausura y apertura para tener uno solo
+#para cada variable. Los nombramos igual que en el dataset liga_mx para unirlos
+
+#Concatenamos todas las fechas
+date <- c(fechas_cl,fechas_ap)
+#Concatenamos los nombres de los equipos locales
+team1 <- c(local_cl,local_ap)
+#Concatenamos los nombres de los equipos visitantes
+team2 <- c(visitante_cl,visitante_ap)
+#Concatenamos los goles anotados por los locales
+score1 <- c(goles_local_cl,goles_local_ap)
+#Concatenamos los goles anotados por los visitantes
+score2 <- c(goles_visitante_cl,goles_visitante_ap)
+#Concatenamos las probabilidades de victoria de los locales
+prob1 <- c(prob_local_cl,prob_local_ap)
+#Concatenamos las probabilidades de empate
+probtie <- c(prob_empate_cl,prob_empate_ap)
+#Concatenamos las probabilidades de victoria de los visitantes
+prob2 <- c(prob_visitante_cl,prob_visitante_ap)
+
+#con el propósito de unir estos resultados con la tabla liga_mx entonces se crearán 
+#vectores con nombres y valores similares a algunas ya en liga_mx para poder unirlos mejor
+
+#Vector que te dice la temporada (2016 y 2017)
+season <- c(rep(2016,length(local_cl)),rep(2017,length(local_ap)))
+#Vector que te dice el id del torneo
+league_id <- c(rep(1975,length(local_cl)),rep(1952,length(local_ap)))
+#Vector que te dice el nombre del torneo
+league <- c(rep("Mexican Primera Division Torneo Clausura",length(local_cl)),rep("Mexican Primera Division Torneo Apertura",length(local_ap)))
+
+#Armamos una tabla preeliminar de los datos obtenidos que se va a unir a liga_mx
+liga_mx_2 <- data.frame(season,date,league_id,league,team1,team2,prob1,prob2,probtie,score1,score2,stringsAsFactors = F)
+
+#spi1, spi2, proj_score1, proj_score2, importance1, importance2, xg1, xg2, nsxg1, nsxg2, 
+#adj_score1, adj_score2
+
+head(liga_mx_2,3)
+```
+
+```{r}
+#Empezamos el proceso para crear una columna en donde diga si el partido es temporada
+#regular o liguilla
+liga_mx_2 <- liga_mx_2 %>% mutate(reg_season = if_else(as.POSIXct(date) > as.POSIXct('2016-05-10')
+                                                   & as.POSIXct(date) < as.POSIXct('2016-05-30'),1,
+                                                   if_else(as.POSIXct(date) > as.POSIXct('2016-11-22')
+                                                   & as.POSIXct(date) < as.POSIXct('2016-12-26'),1,0)))
+#Creamos otra variable para determinar en qué momento inició COVID
+liga_mx_2 <- liga_mx_2 %>% mutate(after_covid = if_else(as.POSIXct(date) > as.POSIXct('2020-03-16'),1,0))
+#Creamos la variable que nos indica si en el partido estuvo presente el VAR
+liga_mx_2 <- liga_mx_2 %>% mutate(is_VAR = if_else(format(as.Date(date),"%Y") >= 2019,1,0))
+```
+
+```{r}
+liga_mx_2
+```
+
+**Convertir todos los nombres de los equipos en liga_mx a character**
+
+**Falta incluir la liguilla para apertura y clausura 2016. Tiene que ir antes de calcular las columnas de VAR, etc.**
+
+Tal vez incluir el equipo campeón y subcampeón en nuevas columnas
+
+Sobre la liga MX no se obtuvieron datos acerca de la temporada ap. y clausura 2016 sobre xg, nsxg, etc., por lo tanto este file se quedará en cierta pausa.
