@@ -1,0 +1,102 @@
+---
+title: "VAR_implications_in_PL"
+author: "Pedro Alan Velázquez Romero"
+date: "7/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+#librerias a utilizar 
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
+            #       "urltools"))
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(httr)
+library(XML)
+library(rvest)
+library(xml2)
+library(tidyverse)
+library(robotstxt)
+library(urltools)
+library(XML)
+library(methods)
+```
+
+Este archivo se enfocará en realizar el análisis propio de los datos obtenidos acerca de los partidos jugados en la liga profesional de fútbol de Inglaterra (Premier League), para ello, vamos a tomar los datos recopilados por Five Thirty Eight, ellos recopilaron datos de partidos de la PL desde la temporada 2016/2017 hasta la temporada pasada 2020/2021. Tomamos estos datos debido a que contienen métricas muy interesantes y que se pueden analizar para tener un mejor insight de lo sucedido dentro de cada partido y para cada equipo de la liga.
+
+El propósito general de toda esta investigación y trabajo es, en primer lugar, conocer el efecto que ha tenido la implementación del VAR en el fútbol de hoy, y en segundo lugar, tratar de hacer un poco de inferencia acerca de las ventajas o desventajas que esto trajo consigo al fútbol de Inglaterra. Para ello, debemos tener en cuenta las siguientes consideraciones acerca del VAR en el fútbol de Inglaterra:
+
+What will the VAR review? 
+
+- Goal/no goal
+- Penalty/no penalty
+- Direct red card (not second yellow card/caution)
+- Mistaken identity (when the referee cautions or sends off the wrong player)
+
+What will it not review? 
+
+* Any yellow card (including second yellow card leading to red)
+* Any free kick offence outside the box (other than red card offence)
+
+## Planteamiento general del problema
+
+Como se explicó en párrafos anteriores, el tema general que se quiere tratar aquí es conocer el efecto que ha tenido la implementación del VAR dentro del fútbol moderno, pero esto a su vez trae consigo muchos temas o subtemas a tratar y por ello es necesario tratar de acortar un poco el elemento de estudio. Tomando en cuenta la ambición de esta investigación acerca del VAR y los diferentes elementos que lo rodean, la pregunta principal que surge aquí, y la cual servirá como parteaguas de nuestra investigación, es la siguiente: **¿El VAR ha beneficiado en mayor medida a equipos "grandes" o "poderosos" en comparación a aquellos que no lo son?**. Es también claro que de esta pregunta pueden surgir varias vertientes interesantes a analizar y las cuáles se expondrán y explicarán a detalle más adelante.
+
+Ya una vez que conocemos la pregunta a resolver y teniendo en cuenta los puntos acerca del VAR, se propone la siguiente línea de acción sobre el análisis de datos:
+
+1. Análisis exploratorio
+2. Planteamiento de hipótesis
+3. Propuesta de modelos con su justificación
+4. Aplicación de modelos sobre hipótesis
+5. Verificación de hipótesis
+6. Posibles correcciones o adición de supuestos sobre los modelos y/o datos
+7. Segunda aplicación de modelos ya tomando en cuenta correcciones o la adición de supuestos
+8. Segunda verificación de hipótesis con las correcciones o adiciones
+9. Conclusiones
+
+```{r,include=FALSE}
+pl_matches <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+pl_var_inc1 <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+```
+
+## Análisis de datos
+
+### 1. Análisis exploratorio
+
+Como primera parte de este análisis exploratorio de las variables de interés, debemos identificar cuáles son los equipos "grandes" o "poderosos" en la PL. Para el caso de la PL, los equipos considerados como los "grandes" son los que forman parte del "Big Six", los cuales son, a su vez, los siguientes:
+
+1. Manchester United
+2. Manchester City
+3. Chelsea
+4. Liverpool
+5. Arsenal
+6. Tottenham
+
+(maybe explayar aquí el por qué del Big Six)
+
+Con esto, vamos primero a crear una nueva variable de tipo indicadora, la cual nos dirá si el equipo local en cuestión (team1) forma parte del "Big Six" o no, asignando el valor de uno si sí es parte del Big Six y un cero si no lo es.
+
+```{r}
+unique(pl_matches$team2) #Modificar el tipo de cada variable de la tabla, algunos los toma como factores en vez de como chars
+str(pl_matches)
+```
+
+```{r}
+pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
+                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
+                                   pl_matches$team1 == 'Manchester City' | 
+                                   pl_matches$team1 == 'Tottenham Hotspur' |
+                                   pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
+                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
+                                   pl_matches$team2 == 'Manchester City' | 
+                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
+
+sum(pl_matches$big_six)
+```
