@@ -83,9 +83,32 @@ Como primera parte de este análisis exploratorio de las variables de interés, 
 
 Con esto, vamos primero a crear una nueva variable de tipo indicadora, la cual nos dirá si el equipo local en cuestión (team1) forma parte del "Big Six" o no, asignando el valor de uno si sí es parte del Big Six y un cero si no lo es.
 
-```{r}
-unique(pl_matches$team2) #Modificar el tipo de cada variable de la tabla, algunos los toma como factores en vez de como chars
-str(pl_matches)
+```{r,include=FALSE}
+#Muchas variables estan como factores, debemos covertirlos en el tipo de variable correcto
+pl_matches$date <- as.POSIXct(pl_matches$date)
+pl_matches$league <- as.character(pl_matches$league)
+pl_matches$team1 <- as.character(pl_matches$team1)
+pl_matches$team2 <- as.character(pl_matches$team2)
+pl_ot$season <- as.character(pl_ot$season)
+pl_ot$team <- as.character(pl_ot$team)
+pl_var_inc$season <- as.character(pl_var_inc$season)
+pl_var_inc$team1 <- as.character(pl_var_inc$team1)
+pl_var_inc$team2 <- as.character(pl_var_inc$team2)
+pl_var_inc$home.away <- as.character(pl_var_inc$home.away)
+pl_var_inc$date <- as.character.Date(pl_var_inc$date)
+pl_var_inc$incident <- as.character(pl_var_inc$incident)
+pl_var_inc$type <- as.character(pl_var_inc$type)
+pl_var_inc1$season <- as.character(pl_var_inc1$season)
+pl_var_inc1$team1 <- as.character(pl_var_inc1$team1)
+pl_var_inc1$team2 <- as.character(pl_var_inc1$team2)
+pl_var_inc1$date <- as.character.Date(pl_var_inc1$date)
+pl_var_inc1$incident <- as.character(pl_var_inc1$incident)
+pl_var_inc1$type <- as.character(pl_var_inc1$type)
+```
+
+```{r,include=FALSE}
+#New variables
+bs_teams <- c('Chelsea','Liverpool','Manchester City','Manchester United','Arsenal','Tottenham Hotspur')
 ```
 
 ```{r}
@@ -97,6 +120,13 @@ pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team
                                    pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
                                    pl_matches$team2 == 'Manchester City' | 
                                    pl_matches$team2 == 'Tottenham Hotspur',1,0)
-
-sum(pl_matches$big_six)
 ```
+
+Como nuestro tema de interés en este análisis es el VAR como nueva herramienta en el fútbol entonces nos enfocaremos en visualizaciones y métricas basadas en el VAR o, la comparación de métricas en situaciones de VAR o situaciones de no VAR
+
+```{r}
+
+```
+
+
+
