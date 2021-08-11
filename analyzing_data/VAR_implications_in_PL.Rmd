@@ -25,6 +25,7 @@ library(robotstxt)
 library(urltools)
 library(XML)
 library(methods)
+library()
 ```
 
 Este archivo se enfocará en realizar el análisis propio de los datos obtenidos acerca de los partidos jugados en la liga profesional de fútbol de Inglaterra (Premier League), para ello, vamos a tomar los datos recopilados por Five Thirty Eight, ellos recopilaron datos de partidos de la PL desde la temporada 2016/2017 hasta la temporada pasada 2020/2021. Tomamos estos datos debido a que contienen métricas muy interesantes y que se pueden analizar para tener un mejor insight de lo sucedido dentro de cada partido y para cada equipo de la liga.
@@ -111,7 +112,7 @@ pl_var_inc1$type <- as.character(pl_var_inc1$type)
 bs_teams <- c('Chelsea','Liverpool','Manchester City','Manchester United','Arsenal','Tottenham Hotspur')
 ```
 
-```{r}
+```{r,include=FALSE}
 pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
                                    pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
                                    pl_matches$team1 == 'Manchester City' | 
@@ -120,13 +121,60 @@ pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team
                                    pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
                                    pl_matches$team2 == 'Manchester City' | 
                                    pl_matches$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six'] <- if_else(pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur' |
+                                   pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc1['big_six'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
+                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
+                                   pl_var_inc1$team1 == 'Manchester City' | 
+                                   pl_var_inc1$team1 == 'Tottenham Hotspur' |
+                                   pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
+                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
+                                   pl_var_inc1$team2 == 'Manchester City' | 
+                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
 ```
+
+#### 1.1 Métricas relacionadas al Big Six con el VAR
+
+Como primer acercamiento acerca de este análisis exploratorio de los datos de la PL primero calcularemos algunas métricas relacionadas a los partidos e intervenciones del VAR con respecto a los equipos que pertenecen al Big Six, para así poder tener una primera intuición acerca de como es que ha beneficiado o perjudicado el VAR a estos equipos.
+
+```{r,include=FALSE}
+partidos_var <- dim(pl_var_inc)[1]
+partidos_var_bs <- sum(pl_var_inc$big_six)
+tasa_var_bs <- round(partidos_var_bs / partidos_var *100,2)
+#df que nos ayudará a contar el número de partidos únicos
+#pl_var_inc %>% arrange(team1,team2)
+data_count <- pl_var_inc %>% group_by(team1) %>% summarise(partidos = n_distinct(team2))
+partidos_unicos <- sum(data_count$partidos)
+
+
+```
+
+La primera métrica que revisaremos aquí será la de la tasa de invloucración del VAR en partidos donde haya jugado al menos un equipo del Big Six, ya sea de local o de visitante. Esta primera métrica nos ayudará a entender qué tanta ocurrencia tuvo el VAR en partidos de los equipos del Big Six. 
+
+Durante las últimas dos temporadas de la PL (19/20 y 20/21), el VAR intervino en un total de **`r partidos_var`** ocasiones dentro de **`r partidos_unicos`** partidos diferentes, de estas **`r partidos_var`** ocasiones en que intervinó el VAR, un total de **`r partidos_var_bs`** sucedieron dentro de partidos en los cuales jugaban al menos un equipo del Big Six, las cuales, a su vez, representan el **`r tasa_var_bs`\%** del total. Este primer resultado nos habla de que, 4 de cada 10 ocasiones en que intervenía el VAR en la PL, sucedía dentro de un partido de algún equipo del Big Six, cifra que a mi parecer me resulta un poco alta, ya que se podría casi asegurar una intervención del VAR dentro de un partido de algún equipo del Big Six. 
+
+A manera de contrastar un poco la cifra obtenida en el párrafo anterior, analizaremos esta misma métrica (tasa de invloucración del VAR en partidos donde haya jugado al menos un equipo del Big Six) pero ahora comparando entre ambas temporadas, esto toma relevancia debido a que no es lo mismo el uso del VAR dentro de la temporada 19/20 que es la primera temporada en que se utilizó el VAR dentro de la PL, al uso del mismo en la temporada 20/21 donde ya se tuvo al menos un año de experiencia para arreglar posibles errores y poder prevenir algunos más. 
+
+#### 1.2 El antes vs el después del VAR
 
 Como nuestro tema de interés en este análisis es el VAR como nueva herramienta en el fútbol entonces nos enfocaremos en visualizaciones y métricas basadas en el VAR o, la comparación de métricas en situaciones de VAR o situaciones de no VAR
 
 ```{r}
-
+ggplot(pl_var_inc1,aes(x=big_six)) + geom_bar() + labs(title = "Número de intervenciones del VAR en equipos del Big Six vs otros equipos", y = "Número de partidos", x = "Tipo de equipo") + theme(panel.background = element_rect(fill = "white", colour = "gray"), plot.title.position = "panel") #+ facet_wrap(facets=~is_VAR)
 ```
+
+Esta primer gráfica que se muestra aquí representa la cantidad de partidos en que 
+
+
+Podemos ver que el numero de decisiones del VAR hay más para los big six que aquellos que no son big six 
 
 
 
