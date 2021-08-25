@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #librerias a utilizar 
 #install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
             #       "urltools"))
+#install.packages('devtools')
+#devtools::install_github("ricardo-bion/ggradar", dependencies=TRUE)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -25,7 +27,7 @@ library(robotstxt)
 library(urltools)
 library(XML)
 library(methods)
-library()
+library(ggradar)
 ```
 
 Este archivo se enfocará en realizar el análisis propio de los datos obtenidos acerca de los partidos jugados en la liga profesional de fútbol de Inglaterra (Premier League), para ello, vamos a tomar los datos recopilados por Five Thirty Eight, ellos recopilaron datos de partidos de la PL desde la temporada 2016/2017 hasta la temporada pasada 2020/2021. Tomamos estos datos debido a que contienen métricas muy interesantes y que se pueden analizar para tener un mejor insight de lo sucedido dentro de cada partido y para cada equipo de la liga.
@@ -61,6 +63,11 @@ Ya una vez que conocemos la pregunta a resolver y teniendo en cuenta los puntos 
 9. Conclusiones
 
 ```{r,include=FALSE}
+#pl_matches <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+#pl_ot <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+#pl_var_inc <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+#pl_var_inc1 <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+
 pl_matches <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
 pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
 pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
@@ -113,6 +120,12 @@ bs_teams <- c('Chelsea','Liverpool','Manchester City','Manchester United','Arsen
 ```
 
 ```{r,include=FALSE}
+
+pl_var_inc$team1 <- if_else(pl_var_inc$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team1)
+pl_var_inc$team2 <- if_else(pl_var_inc$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team2)
+pl_var_inc1$team1 <- if_else(pl_var_inc1$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team1)
+pl_var_inc1$team2 <- if_else(pl_var_inc1$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team2)
+
 pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
                                    pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
                                    pl_matches$team1 == 'Manchester City' | 
@@ -139,6 +152,56 @@ pl_var_inc1['big_six'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$t
                                    pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
                                    pl_var_inc1$team2 == 'Manchester City' | 
                                    pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
+
+pl_matches['big_six_h'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
+                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
+                                   pl_matches$team1 == 'Manchester City' | 
+                                   pl_matches$team1 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six_h'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H') |
+                                  ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A'),1,0)
+
+pl_var_inc1['big_six_h'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
+                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
+                                   pl_var_inc1$team1 == 'Manchester City' | 
+                                   pl_var_inc1$team1 == 'Tottenham Hotspur',1,0)
+
+pl_matches['big_six_a'] <- if_else(pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
+                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
+                                   pl_matches$team2 == 'Manchester City' | 
+                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six_a'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A') |
+                                   ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H'),1,0)
+
+pl_var_inc1['big_six_a'] <- if_else(pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
+                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
+                                   pl_var_inc1$team2 == 'Manchester City' | 
+                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
+
+pl_matches['season2'] <- case_when(
+  pl_matches$season == 2016 ~ '16/17',
+  pl_matches$season == 2017 ~ '17/18',
+  pl_matches$season == 2018 ~ '18/19',
+  pl_matches$season == 2019 ~ '19/20',
+  pl_matches$season == 2020 ~ '20/21'
+)
+
+numero_int_var <- pl_var_inc1 %>% group_by(season,team1,team2) %>% summarise(int_var = n_distinct(incident))
+
+pl_matches <- pl_matches %>% left_join(numero_int_var,by=c('season2' = 'season','team1','team2'))
 ```
 
 #### 1.1 Métricas relacionadas al Big Six con el VAR
@@ -146,24 +209,95 @@ pl_var_inc1['big_six'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$t
 Como primer acercamiento acerca de este análisis exploratorio de los datos de la PL primero calcularemos algunas métricas relacionadas a los partidos e intervenciones del VAR con respecto a los equipos que pertenecen al Big Six, para así poder tener una primera intuición acerca de como es que ha beneficiado o perjudicado el VAR a estos equipos.
 
 ```{r,include=FALSE}
+partidos_1920 <- (pl_matches %>% filter(season == 2019) %>% dim())[1]
+partidos_2021 <- (pl_matches %>% filter(season == 2020) %>% dim())[1]
+total_partidos <- (pl_matches %>% filter(season %in% c(2020,2019)) %>% dim())[1]
 partidos_var <- dim(pl_var_inc)[1]
+partidos_var_1920 <- (pl_var_inc %>% filter(season == "19/20") %>% dim())[1]
+partidos_var_2021 <- (pl_var_inc %>% filter(season == "20/21") %>% dim())[1]
 partidos_var_bs <- sum(pl_var_inc$big_six)
 tasa_var_bs <- round(partidos_var_bs / partidos_var *100,2)
 #df que nos ayudará a contar el número de partidos únicos
 #pl_var_inc %>% arrange(team1,team2)
 data_count <- pl_var_inc %>% group_by(team1) %>% summarise(partidos = n_distinct(team2))
+data_count_1920 <- pl_var_inc %>% filter(season == "19/20") %>% group_by(team1) %>% summarise(partidos = n_distinct(team2))
+data_count_2021 <- pl_var_inc %>% filter(season == "20/21") %>% group_by(team1) %>% summarise(partidos = n_distinct(team2))
 partidos_unicos <- sum(data_count$partidos)
-
-
+partidos_unicos_1920 <- sum(data_count_1920$partidos)
+partidos_unicos_2021 <- sum(data_count_2021$partidos)
+tasa_int_var <- round(partidos_var/partidos_unicos,2)
+tasa_int_var_1920 <- round(partidos_var_1920/partidos_unicos_1920,2)
+tasa_partidos <- round(partidos_unicos/total_partidos*100,2)
+tasa_partidos_1920 <- round(partidos_unicos_1920/partidos_1920*100,2)
+tasa_partidos_2021 <- round(partidos_unicos_2021/partidos_2021*100,2)
+tasa_int_var_2021 <- round(partidos_var_2021/partidos_unicos_2021,2)
 ```
 
 La primera métrica que revisaremos aquí será la de la tasa de invloucración del VAR en partidos donde haya jugado al menos un equipo del Big Six, ya sea de local o de visitante. Esta primera métrica nos ayudará a entender qué tanta ocurrencia tuvo el VAR en partidos de los equipos del Big Six. 
 
-Durante las últimas dos temporadas de la PL (19/20 y 20/21), el VAR intervino en un total de **`r partidos_var`** ocasiones dentro de **`r partidos_unicos`** partidos diferentes, de estas **`r partidos_var`** ocasiones en que intervinó el VAR, un total de **`r partidos_var_bs`** sucedieron dentro de partidos en los cuales jugaban al menos un equipo del Big Six, las cuales, a su vez, representan el **`r tasa_var_bs`\%** del total. Este primer resultado nos habla de que, 4 de cada 10 ocasiones en que intervenía el VAR en la PL, sucedía dentro de un partido de algún equipo del Big Six, cifra que a mi parecer me resulta un poco alta, ya que se podría casi asegurar una intervención del VAR dentro de un partido de algún equipo del Big Six. 
+Durante las últimas dos temporadas de la PL (19/20 y 20/21), el VAR intervino en un total de **`r partidos_var`** ocasiones dentro de **`r partidos_unicos`** partidos diferentes, esto deja a su vez las siguientes conslusiones:
 
-A manera de contrastar un poco la cifra obtenida en el párrafo anterior, analizaremos esta misma métrica (tasa de invloucración del VAR en partidos donde haya jugado al menos un equipo del Big Six) pero ahora comparando entre ambas temporadas, esto toma relevancia debido a que no es lo mismo el uso del VAR dentro de la temporada 19/20 que es la primera temporada en que se utilizó el VAR dentro de la PL, al uso del mismo en la temporada 20/21 donde ya se tuvo al menos un año de experiencia para arreglar posibles errores y poder prevenir algunos más. 
+1. Contando el número de partidos totales jugados en ambas temporadas (**`r total_partidos`**), se tiene una tasa de intervención del VAR en la PL del **`r tasa_partidos`\%**, es decir, prácticamente en cada 4 de 10 partidos dentro de la PL se veía la intervención del VAR de alguna manera.
+2. Contando solamente los partidos en que había la intervención del VAR, se tiene un estimado de **`r tasa_int_var`** intervenciones del VAR por partido, es decir, prácticamente se revisaba dos veces el monitor del VAR en cada partido donbde éste se hacía presente.
 
-#### 1.2 El antes vs el después del VAR
+Ahora, de estas **`r partidos_var`** ocasiones en que intervinó el VAR, un total de **`r partidos_var_bs`** sucedieron dentro de partidos en los cuales jugaban al menos un equipo del Big Six, las cuales, a su vez, representan el **`r tasa_var_bs`\%** del total. Este primer resultado nos habla de que, 4 de cada 10 ocasiones en que intervenía el VAR en la PL, sucedía dentro de un partido de algún equipo del Big Six, cifra que a mi parecer me resulta un poco alta, ya que se podría casi asegurar una intervención del VAR dentro de un partido de algún equipo del Big Six.
+
+Con el cálculo de estas primeras métricas podemos empezar a ver que el VAR tuvo gran participación dentro de partidos en los cuales se involucraban al menos un equipo del Big Six, pero, ¿qué tanta fue la influencia de estos equipos sobre el VAR? Intentaremos responder, o al menos tratar de dar una primer estimación, esta pregunta basados en algunos gráficos pertinentes.
+
+```{r}
+ggplot(pl_matches,aes(x=score1)) + geom_histogram(bins = 10,color="darkblue", fill="lightblue") + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(score1)),color="red", linetype="dashed", size=1) + geom_density(kernel = 'epanechnikov',trim = 'T')
+```
+
+```{r}
+ggplot(pl_matches,aes(x=prob1)) + geom_histogram(bins = 10,color="darkblue", fill="lightblue",na.rm = T) + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(prob1)),color="red", linetype="dashed", size=1) + geom_density(aes(prob1),color = 'green',kernel = 'epanechnikov') + geom_rug(aes(prob1)) + ylim(0,250)
+```
+
+```{r}
+ggplot(pl_matches,aes(x=prob1)) + geom_density(kernel = 'cosine',color='orange',bw=0.04,fill='green') + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(prob1)),color="red", linetype="dashed", size=1)
+```
+
+```{r}
+plot(density(pl_matches$prob1,kernel = "gaussian"), xlim = c(0,1), ylim = c(0,5))
+lines(density(pl_matches$prob1[pl_matches$big_six == 0],kernel = "triangular"), col = "red")
+lines(density(pl_matches$prob1[pl_matches$big_six == 1],kernel = "rectangular"), col = "blue")
+lines(density(pl_matches$prob1[pl_matches$is_VAR == 0],kernel = "epanechnikov"), col = "orange")
+lines(density(pl_matches$prob1[pl_matches$is_VAR == 1],kernel = "biweight"), col = "green")
+```
+
+#### 1.2 Temporada 19/20 vs 20/21
+
+A manera de contrastar un poco las cifras obtenidas en el apartado anterior, analizaremos esta misma métrica (tasa de invloucración del VAR en partidos donde haya jugado al menos un equipo del Big Six) pero ahora comparando entre ambas temporadas, esto toma relevancia debido a que no es lo mismo el uso del VAR dentro de la temporada 19/20 que es la primera temporada en que se utilizó el VAR dentro de la PL, al uso del mismo en la temporada 20/21 donde ya se tuvo al menos un año de experiencia para arreglar posibles errores y poder prevenir algunos más. 
+
+Como un primer punto diremos que, dentro de la temporada 19/20 de la PL, el VAR intervino un total de **`r partidos_var_1920`** ocasiones dentro de **`r partidos_unicos_1920`** partidos únicos, lo cual, a su vez, deja los siguientes apuntes:
+
+1. Tomando en cuenta el número total de partidos jugados en la temporada 19/20 (**`r partidos_1920`**), el VAR se hizo protagonista en un **`r tasa_partidos_1920`\%**, es decir, el VAR se hizo presente en 4 de cada 10 partidos jugados en la 19/20
+2. Contando solamente los partidos en donde se hizo presente al menos una vez el VAR, se tiene un estimado de **`r tasa_int_var_1920`** intervenciones del VAR por partido, aquí podemos decir que el VAR, en promedio, se hizo presente solamente una vez por partido en la temporada 19/20.
+
+Hasta este momento, sin saber aún los resultados de la temporada 20/21, podemos decir que la actuación del VAR en la temporada 19/20 en la PL fue bastante mesurada, hasta este momento nos da la sensación de que solo se utilizó cuando realmente se necesitaba de su uso. Ahora, analizaremos los mismos números pero para la temporada 20/21.
+
+Ahora revisaremos los mismos datos para la temporada 20/21. Dentro de la temporada 20/21 de la PL, el VAR intervino un total de **`r partidos_var_2021`** ocasiones dentro de **`r partidos_unicos_2021`** partidos únicos, lo cual, deja los siguientes apuntes:
+
+1. Tomando en cuenta el número total de partidos jugados en la temporada 20/21 (**`r partidos_2021`**), el VAR se hizo protagonista en un **`r tasa_partidos_2021`\%**, es decir, el VAR se hizo presente en prácticamente 5 de cada 10 partidos, o, dicho de otra forma, cada 2 partidos existía la intervención del VAR durante la temporada 20/21.
+2. Contando solamente los partidos en donde se hizo presente almenos una vez el VAR, se tiene un estimado de **`r tasa_int_var_2021`** intervenciones del VAR por partido, aquí podemos decir que el VAR, en promedio, se hizo presente solamente una vez por partido en la temporada 20/21.
+
+
+
+```{r, include=FALSE}
+q <- pl_matches %>% filter(season %in% c(2019,2020)) %>% ggplot(.,aes(x=spi1,y=prob1)) + geom_jitter(aes(colour=factor(is_VAR)))
+p <- pl_matches %>% filter(season %in% c(2019,2020)) %>% ggplot(.,aes(x=spi1,y=prob1)) + geom_jitter(aes(colour=factor(big_six))) + #facet_wrap(facets=~is_VAR) 
+facet_grid(after_covid ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"), after_covid = c('0' = 'Before COVID', '1' = 'After COVID')))  + labs(title = "Número de intervenciones del VAR en equipos del Big Six vs otros equipos", y = "Probabilidad de victoria", x = "Soccer Power Index", color = "Big Six\n") + scale_color_manual(labels = c("No", "Yes"), values = c("green", "orange"))
+```
+
+```{r}
+
+```
+
+```{r}
+print(q)
+print(p)
+```
+
+#### 1.3 El antes vs el después del VAR
 
 Como nuestro tema de interés en este análisis es el VAR como nueva herramienta en el fútbol entonces nos enfocaremos en visualizaciones y métricas basadas en el VAR o, la comparación de métricas en situaciones de VAR o situaciones de no VAR
 
