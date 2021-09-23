@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
             #       "urltools"))
 #install.packages('devtools')
 #devtools::install_github("ricardo-bion/ggradar", dependencies=TRUE)
+#install.packages('fmsb')
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -28,23 +29,26 @@ library(urltools)
 library(XML)
 library(methods)
 library(ggradar)
+library(scales)
+library(tibble)
+library(fmsb)
 ```
 
-Este archivo se enfocará en realizar el análisis propio de los datos obtenidos acerca de los partidos jugados en la liga profesional de fútbol de Inglaterra (Premier League), para ello, vamos a tomar los datos recopilados por Five Thirty Eight, ellos recopilaron datos de partidos de la PL desde la temporada 2016/2017 hasta la temporada pasada 2020/2021. Tomamos estos datos debido a que contienen métricas muy interesantes y que se pueden analizar para tener un mejor insight de lo sucedido dentro de cada partido y para cada equipo de la liga.
+Este archivo se enfocará en realizar el análisis propio de los datos obtenidos acerca de los partidos jugados en la liga profesional de fútbol de Inglaterra (Premier League), para ello, vamos a tomar los datos recopilados por Five Thirty Eight, ellos recopilaron datos de partidos de la Premier League (PL) desde la temporada 2016/2017 hasta la temporada pasada 2020/2021. Tomamos estos datos debido a que contienen métricas muy interesantes y que se pueden analizar para tener un mejor insight de lo sucedido dentro de cada partido y para cada equipo de la liga.
 
 El propósito general de toda esta investigación y trabajo es, en primer lugar, conocer el efecto que ha tenido la implementación del VAR en el fútbol de hoy, y en segundo lugar, tratar de hacer un poco de inferencia acerca de las ventajas o desventajas que esto trajo consigo al fútbol de Inglaterra. Para ello, debemos tener en cuenta las siguientes consideraciones acerca del VAR en el fútbol de Inglaterra:
 
-What will the VAR review? 
+¿Qué revisará el VAR dentro de los partidos de la PL?
 
-- Goal/no goal
-- Penalty/no penalty
-- Direct red card (not second yellow card/caution)
-- Mistaken identity (when the referee cautions or sends off the wrong player)
+- Revisará si es que el gol anotado es válido o no
+- Revisará la existencia de un posible penal no marcado por el árbitro o, en caso de que lo haya marcado, la veracidad del mismo
+- Revisará si la falta cometida y marcada por el árbitro es meritoria de roja (esto solo aplica para rojas directas, no para el caso de doble amarilla)
+- Revisará que el árbitro no se equivoque de jugador a la hora de sancionar una falta
 
-What will it not review? 
+¿Qué no revisará el VAR dentro de los partidos de la PL?
 
-* Any yellow card (including second yellow card leading to red)
-* Any free kick offence outside the box (other than red card offence)
+- Cualquier tarjeta amarilla sancionada por el árbitro del encuentro
+- Cualquier tiro libre directo o indirecto fuera del área (a menos que sea meritoria de roja directa)
 
 ## Planteamiento general del problema
 
@@ -63,15 +67,19 @@ Ya una vez que conocemos la pregunta a resolver y teniendo en cuenta los puntos 
 9. Conclusiones
 
 ```{r,include=FALSE}
-#pl_matches <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
-#pl_ot <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
-#pl_var_inc <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
-#pl_var_inc1 <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+work_computer = F
 
-pl_matches <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
-pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
-pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
-pl_var_inc1 <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+if(work_computer){
+  pl_matches <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+  pl_ot <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+  pl_var_inc <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+  pl_var_inc1 <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+} else {
+  pl_matches <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+  pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+  pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+  pl_var_inc1 <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details1.csv') 
+}
 ```
 
 ## Análisis de datos
@@ -238,31 +246,113 @@ La primera métrica que revisaremos aquí será la de la tasa de invloucración 
 Durante las últimas dos temporadas de la PL (19/20 y 20/21), el VAR intervino en un total de **`r partidos_var`** ocasiones dentro de **`r partidos_unicos`** partidos diferentes, esto deja a su vez las siguientes conslusiones:
 
 1. Contando el número de partidos totales jugados en ambas temporadas (**`r total_partidos`**), se tiene una tasa de intervención del VAR en la PL del **`r tasa_partidos`\%**, es decir, prácticamente en cada 4 de 10 partidos dentro de la PL se veía la intervención del VAR de alguna manera.
-2. Contando solamente los partidos en que había la intervención del VAR, se tiene un estimado de **`r tasa_int_var`** intervenciones del VAR por partido, es decir, prácticamente se revisaba dos veces el monitor del VAR en cada partido donbde éste se hacía presente.
+2. Contando solamente los partidos en que había la intervención del VAR, se tiene un estimado de **`r tasa_int_var`** intervenciones del VAR por partido, es decir, prácticamente se revisaba dos veces el monitor del VAR en cada partido donde éste se hacía presente.
 
 Ahora, de estas **`r partidos_var`** ocasiones en que intervinó el VAR, un total de **`r partidos_var_bs`** sucedieron dentro de partidos en los cuales jugaban al menos un equipo del Big Six, las cuales, a su vez, representan el **`r tasa_var_bs`\%** del total. Este primer resultado nos habla de que, 4 de cada 10 ocasiones en que intervenía el VAR en la PL, sucedía dentro de un partido de algún equipo del Big Six, cifra que a mi parecer me resulta un poco alta, ya que se podría casi asegurar una intervención del VAR dentro de un partido de algún equipo del Big Six.
 
-Con el cálculo de estas primeras métricas podemos empezar a ver que el VAR tuvo gran participación dentro de partidos en los cuales se involucraban al menos un equipo del Big Six, pero, ¿qué tanta fue la influencia de estos equipos sobre el VAR? Intentaremos responder, o al menos tratar de dar una primer estimación, esta pregunta basados en algunos gráficos pertinentes.
+Con el cálculo de estas primeras métricas podemos empezar a ver que el VAR tuvo gran participación dentro de partidos en los cuales se involucraban al menos un equipo del Big Six, pero, ¿qué tanta fue la influencia de estos equipos sobre el VAR? Intentaremos responder, o al menos tratar de dar una primera estimación, esta pregunta basados en algunos gráficos pertinentes.
 
-```{r}
-ggplot(pl_matches,aes(x=score1)) + geom_histogram(bins = 10,color="darkblue", fill="lightblue") + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(score1)),color="red", linetype="dashed", size=1) + geom_density(kernel = 'epanechnikov',trim = 'T')
+La primera gráfica que mostraremos aquí será un histograma en el cual se muestre la frecuencia de goles anotados por los equipos de la PL en calidad de localía, antes y después del VAR, también, se divirán los equipos en equipos del Big Six y equipos que no pertenezcan al Big Six. La importancia de este criterio de la localía es porque, en primer lugar, siempre un equipo de fútbol, sea el que este sea, tiene mayor influencia sobre el árbitro si es que éste juega de local que de visitante, y, en segundo lugar, porque el equipo local siempre suele tener una ventaja por "default" cuando juega de local: la hinchada.
+
+```{r,include=FALSE}
+table_median_score1 <- pl_matches %>% group_by(is_VAR,big_six_h) %>% summarise(median_val = median(score1,na.rm = T))
+
+hist_score1 <- ggplot(pl_matches,aes(x=score1)) + geom_histogram(bins = 10,color="darkblue", fill="lightblue",na.rm = T) + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de equipos locales de la PL", y = "Frecuencia de goles", x = "Número de Goles anotados") + geom_vline(data = table_median_score1,aes(xintercept=median_val),color="red", linetype="dashed", size=1) + geom_density(kernel = 'epanechnikov',color = 'green')  + geom_rug(aes(score1))
 ```
 
 ```{r}
-ggplot(pl_matches,aes(x=prob1)) + geom_histogram(bins = 10,color="darkblue", fill="lightblue",na.rm = T) + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(prob1)),color="red", linetype="dashed", size=1) + geom_density(aes(prob1),color = 'green',kernel = 'epanechnikov') + geom_rug(aes(prob1)) + ylim(0,250)
+hist_score1
+```
+
+Como primer resultado podemos observar el histograma de los goles anotados por los equipos de la PL en calidad de local, dividido en cuatro secciones: en la primera sección (parte superior izq.), se encuentran equipos que no pertenecen al Big Six y que ademas jugaron partidos sin la presencia del VAR; en la segunda sección (parte superior derecha), se encuentran equipos que no pertenecen al Big Six y que además hayan jugado partidos con la presencia del VAR; en la tercera sección (parte inferior izq.), se encuentran equipos que pertenecen al Big Six y que además hayan jugado partidos sin la presencia del VAR; y, finalmente, en la cuarta sección (parte inferior derecha), se encuentran equipos que pertenecen al Big Six y que además hayan jugado partidos con presencia del VAR. De aquí, podemos enlistar los siguientes resultados:
+
+1. De manera general, podemos ver las cuatro gráficas tienen un sesgo hacia la izquierda, es decir, la gran cantidad de datos acerca de los goles anotados por el equipo local se encuentran muy cargados a la izquierda, esto quiere decir, a su vez, que en general los equipos locales de la PL tienden a anotar pocos goles (según la gráfica no mayor a dos goles) en la mayoría de los partidos. 
+
+2. Si hacemos la comparación de los goles anotados con respecto a la presencia del VAR, es decir, del antes y después del VAR (comparación vertical), podemos decir que prácticamente son las misma gráficas, esto en el sentido de que en ambos casos (casos de partidos sin VAR vs partidos sin VAR) las gráficas se encuentran muy sesgadas a la izquierda y en general se tienen muy pocos registros de partidos con más de cinco goles anotados. La única diferencia que podemos ver aquí es que las gráficas que representan los partidos con VAR se encuentran más "planas" que las que representan los partidos sin VAR, es decir, las gráficas no son tan altas y esto quiere decir que se tienen menos frecuencia de partidos con las respectivas cantidades de goles anotados en cada caso, pero esto, a su vez, puede deberse a que solo tenemos registro de dos temporadas con VAR y a su vez tenemos registros de 3 temporadas completas sin VAR, por lo tanto, de una manera un poco obvia es que se tienen menos registros para aquellos partidos con VAR y, en consecuencia, la gráfica más "plana".
+
+3. Si hacemos la comparación de los goles anotados con respecto al tipo de equipo que representa (Big Six, comparación horizontal), podemos decir que las gráficas son similares en el sentido de que ambas presentan un sesgo hacia la izquierda pero, en el caso de las gráficas que representan a equipos fuera del Big Six, el sesgo está un poco más a la izquierda en comparación con las gráficas que representan a equipos dentro del Big Six. Para poder visualizar mejor esto es que se dibujó la mediana de los datos en cada caso dentro de cada gráfica, se decidió usar la mediana ya se que se trata de un estimador insesgado y por lo tanto refleja mejor el comportamiento de los datos. Aquí podemos ver finalmente que la mediana es mayor para equipos dentro del Big Six y lo cual quiere decir que estos equipos, en promedio, anotaron más goles en sus partidos que aquellos equipos fuera del Big Six. 
+
+Como último aspecto de esta primer gráfica mostrada aquí, se trazó la línea que estima la densidad de los goles anotados por equipos locales de la PL (línea verde), sin embargo, en esta primera gráfica no se puede observar bien esta línea de densidad debido a que es muy plana y por los límites de la gráfica no se puede apreciar muy bien  $\color{red}{\text{(¿Por qué? Investigar)}}$.
+
+```{r}
+hist_score1 + ylim(0,0.6)
+```
+
+Para poder visualizar mejor esta línea de densidad para cada caso, se modificó el límite de la gráfica. Aquí ya podemos apreciar mejor la línea de densidad para cada caso, para poder crear esta línea de densidad se utilizó el kernel de _epanechnikov_ $\color{red}{\text{(Según yo es el mejor kernel, checarlo)}}$ y también se utilizó una medida de ancho de bin con un ajuste hecho por la función _density_ $\color{red}{\text{(Revisar el calculo del bw)}}$. Con esto, dentro de la gráfica podemos observar que las densidades para aquellos partidos en donde participaron equipos fuera del Big Six son similares con un pico alto en la parte izquierda de la gráfica que es donde se encuentra la mediana (algo que nos imaginábamos debido al sesgo en los histogramas de la gráfica pasada) y, por otro lado, las densidades de los equipos dentro del Big Six, las densidades tienen un poco más de picos en la parte izquierda y casi del mismo tamaño todos, esto nos quiere decir a su vez que los goles anotados por equipos locales entro del Big Six tuvieron una distribución muy similar para hasta tres goles por partido. Después de los tres goles, para todos los casos, la línea se empieza a aplanar y por lo tanto nos quiere decir que ya tenemos muy poca frecuencia de partidos con esa cantidad de goles, esto es algo que de hecho es "común" en el fútbol moderno.
+
+En conclusión, estas líneas de densidad estiman muy bien a los histogramas presentados en la gráfica anterior.
+
+Hasta este momento, con esta primer gráfica, no hemos detectado algún efecto sustancial o directa de VAR sobre el performance de los equipos de la PL, podríamos decir que hasta este momento el VAR no hizo más que "retrasar el tiempo de juego", pero aún falta mucho para poder asegurar esto. 
+
+Otra variable de interés aquí es la de los goles esperados, o Expected Goals (XG) por su traducción al inglés, esta variable no es de gran utilidad para saber exactamente la calidad de los tiros que realiza un equipo hacia el arco contrario durante un partido. Ahora, para nuestro problema en específico, esta variable no es de gran ayuda porque así nos permite saber exactamente que tipo de tiros realizaban los equipos antes de la llegada del VAR y qué tipos de tiros realizan ahora con la llegada del VAR. La parte interesante, o la que nos interesaría conocer más a fondo, es la de saber si es que después del VAR los equipos tomaron más riesgos en cuanto a tiros o si, por otro lado, los equipos e tornaron más conservadores y realizaban tiros de menos "calidad" (valores pequeños de XG). Como en este apartado nos interesa ver la relación con respecto a los equipos del Big Six, se realizará un análisis muy similar al anterior.
+
+Primero elaboraremos el histograma de los XG con respecto a los equipos pertenecientes al Big Six y si es que ya existía el VAR en ese entonces o no. Todo esto tomando al equipo local como equipo de control.
+
+```{r,include=FALSE}
+table_median_xg1 <- pl_matches %>% group_by(is_VAR,big_six_h) %>% summarise(median_val = median(xg1,na.rm = T))
+
+hist_xg1 <- ggplot(pl_matches,aes(x=xg1)) + geom_histogram(bins=20,color="red",fill='orange',na.rm = T) + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles esperados en partidos de equipos locales de la PL", y = "Frecuencia de goles esperados", x = "Número de Goles esperados") + geom_vline(data = table_median_xg1,aes(xintercept=median_val),color="green", linetype="dashed", size=1,na.rm = T) + geom_density(kernel = 'epanechnikov',color = 'blue',na.rm = T)  + geom_rug(aes(xg1))
 ```
 
 ```{r}
-ggplot(pl_matches,aes(x=prob1)) + geom_density(kernel = 'cosine',color='orange',bw=0.04,fill='green') + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(aes(xintercept=median(prob1)),color="red", linetype="dashed", size=1)
+hist_xg1
 ```
 
+Después de realizar la primera gráfica en donde se muestra la frecuencia de goles esperados en toda la PL podemos observar los siguientes puntos:
+
+1. En cuanto a los XG antes de la aparición del VAR, podemos decir que eran más frecuentes o dicho de otra manera, se creaban más oportunidades de gol antes de la aparición del VAR, esto lo podemos deducir debido a que las gráficas de la derecha (con VAR) se muestran más planas que aquellas que se encuentran en la izquierda (sin VAR), y esto, a su vez, podría llevarnos de manera inmediata a la siguiente pregunta: ¿Los equipos se volvieron más cautelosos o más "pasivos" con la llegada del VAR? Algo que sin duda se tratará de responder con un análisis más profundo más adelante.
+2. En cuanto a los XG entre los equipos que pertenecen al Big Six y aquellos que no, podemos decir que en general aquellos equipos que no pertenecen al Big Six tienden a crear más oportunidades de gol con poca probabilidad de anotación, esto se puede constatar con las gráficas en la parte de arriba las cuales están sesgadas hacia la izquierda, es decir, tienen alta frecuencia de XG con valores pequeños. Por otro lado, los equipos que pertenecen al Big Six tienden a crear oportunidades de gol con valores más altos, esto se puede constatar con las gráficas de la parte de abajo, las cuales no están tan sesgadas a la izquierda y están más bien un poco más centradas al rededor de 2. Esto nos hace pensar inmediatamente que aquellos equipos que no pertenecen al Big Six tienden a "deshacerse" del balón tirando hacia portería desde distancias grandes desde la poprtería, mientras que aquellos equipos del Big Six tienden a acercarse más a la portería para poder tirar y por ende crean situaciones de mayor peligro de gol. 
+En cuanto a las medianas, podemos decir que son muy iguales entre los equipos que no pertencen al Big Six (tanto con VAR como sin VAR) y en cuanto a los equipos del Big Six, su mediana cambia con la presencia del VAR, ésta es menor cuando está presente el VAR. De aquí nos hace preguntar de nuevo sobre la cautela de los equipos de la PL con la llegada del VAR, algo que se analizará a más profundidad más adelante.
+
+Adicional al histograma mostrado arriba también queremos mostrar la estimación de la línea de densidad de los datos, para ello, utilizamos el kernel de epanechnikov, la cual es la mejor para estos datos en específico (Si? Investigar).
+
 ```{r}
-plot(density(pl_matches$prob1,kernel = "gaussian"), xlim = c(0,1), ylim = c(0,5))
-lines(density(pl_matches$prob1[pl_matches$big_six == 0],kernel = "triangular"), col = "red")
-lines(density(pl_matches$prob1[pl_matches$big_six == 1],kernel = "rectangular"), col = "blue")
-lines(density(pl_matches$prob1[pl_matches$is_VAR == 0],kernel = "epanechnikov"), col = "orange")
-lines(density(pl_matches$prob1[pl_matches$is_VAR == 1],kernel = "biweight"), col = "green")
+hist_xg1 + ylim(0,0.6)
 ```
+
+Después de realizar la gráfica podemos observar que en general las líneas de densidad tienen los mismos comportamientos que los histogramas analizados arriba. La cuestión que resalta al ver las líneas de densidad es que, en general, dentro de las 4 gráficas, la línea de la mediana no se encuentra sobre el pico más alto de cada gráfica, esto quiere decir que aquellos XG con mayor frecuencia no fueron, en general, la mediana de los datos, el caso en donde parece que si se sobrepone la mediana al pico de la gráfica es en el caso de los equipos del Big Six antes del VAR, lo cual nos hace pensar que en promedio, los XG con mayor frecuencia son también aquellos que usualmente se presentaban en cada partido.
+
+Hasta este punto, combinando ya los pimeros análisis acerca de los goles anotados y los XG en la PL, podemos decir que en general el VAR ha mermado las ocasiones de gol ocasionadas por los equipos de la PL y por ende también ha mermado la cantidad de goles anotados por los mismos equipos de la PL. Ahora, con el afán de reforzar esta primera hipótesis generada hasta este momento, analizaremos a los goles esperados generados de los no tiros dentro del partido (NSxG por sus siglas en inglés) de la misma manera en que analizamos las anteriores dos variables.
+
+Esta variable, NSxG, nos es de interés debido a que esta variable mide la probabilidad de que cada posesión de balón de cada equipo termine eventualmente en gol, con esto abarcamos un espectro mucho más grande de oportunidades con respecto a los que mediamos con xG, esto debido a que NSxG mide la probabilidad de gol desde que el equipo empieza con la posesión de la pelota, no importando en que parte de la cancha se encuentre (si la posesión empieza más cerca de la portería tiene más probabilidad de que termine en anotación), mientras que xG solo cuenta la probabilidad de aquellos tiros que se realizan directo a portería sin importar la jugada que llevó al tiro de gol.
+
+Para esto, iniciaremos con el histograma de NSxG dividiendo de igual manera por el criterio del VAR y del Big Six utilizados de igual manera en la parte de arriba. Aquí también el análisis se hace sobre el equipo local.
+
+```{r,include=FALSE}
+table_median_nsxg1 <- pl_matches %>% group_by(is_VAR,big_six_h) %>% summarise(median_val = median(nsxg1,na.rm = T))
+
+hist_nsxg1 <- ggplot(pl_matches,aes(x=nsxg1)) + geom_histogram(bins = 25,color="darkblue", fill="green",na.rm = T) + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + ggtitle('Histograma de goles esperados por posesión de balón en partidos de equipos \n locales de la PL') + labs(y = "Frecuencia de goles esperados por posesión", x = "Número de goles esperados por posesión") + geom_vline(data = table_median_nsxg1,aes(xintercept=median_val),color="blue", linetype="dashed", size=1) + geom_density(aes(nsxg1),color = 'red',kernel = 'epanechnikov',na.rm = T) + geom_rug(aes(nsxg1))
+```
+
+En la gráfica resultante podemos observar las siguientes comparaciones:
+
+1. Para empezar, los equipos pertenecientes al Big Six generaron menos goles esperados por posesión, es decir, no siempre que tenían el balón con ellos generaban alguna ocasión peligrosa de gol. Sin embargo, dentro de esta misma comparación con equipos pertenecientes al Big Six, podemos observar que, en general, las ocasiones que llegaban a generar por posesión los equipos pertenecientes al Big Six, fueron de mayor "calidad", es decir, por posesión, los equipos pertenecientes al Big Six tenían más probabilidad de anotar gol que aquellas posesiones de los equipos no pertencientes al Big Six. 
+2. En cuanto a la comparación con respecto a la llegada del VAR, podemos decir que par ambos tipos de equipo, se redujeron la cantidad de ocasiones generadas por posesión, es decir, los equipos se "atrevían" menos a generar ocasiones de gol cada que tenían el balón en sus pies, pero, por otro lado, la calidad de las mismas se mantenían igual. El VAR, en esta ocasión, simplemente los hacía esperar más a generar una oportunidad de gol pero siempre con la misma calidad con las que nos tienen acostumbrados.
+3. En cuanto a las medianas de cada conjunto, podemos observar que las medianas en cuanto al VAR no se movieron, es decir, las medianas fueron prácticamente las mismas sin importar la presencia del VAR en los partidos. En donde si cambiaron las medianas fue con respecto al criterio de si los equipos eran pertencientes al Big Six o no, en general, los equipos pertenecientes al Big Six tuvieron una mediana más grande que aquellos equipos no pertenecientes, es decir, los equipos pertencientes al Big Six generaban, en promedio, oportunidades de gol de más calidad.
+
+```{r}
+hist_nsxg1
+```
+
+Después de este primer análisis a los goles esperados por posesión en los equipos de la PL, podemos llegar a las siguientes conclusiones: los equipos pertenecientes al Big Six usualmente generan o provocan ocasiones de gol de mayor calidad pero en total generan menos ocasiones de gol que aquellos equipos no pertenecientes al Big Six.
+
+Ahora, así como se hizo en los anteriores análisis, se revisarán las curvas de densidad para cada grupo de datos con el fin de obtener una estimación de la distribución de los mismos y cómo es que se comportaron durante todas estas temporadas en cuestión. Para ello, se trazó la densidad de los datos con el kernel de epanechnikov y se hizo una ampliación a la imagen para poder observarla mejor de cerca.
+
+```{r}
+hist_nsxg1 + ylim(0,0.7)
+```
+
+Al revisar la gráfica de las densidades podemos observar que las curvas para los equipos no pertenecientes al Big Six tienen un pico más alto y con un sesgo hacia la izquierda, es decir, los equipos no pertenecientes al Big Six generan muchas más ocasiones de gol por posesión pero con probabilidades muy pequeñas de que éstas acaben en gol,y por otro lado, los equipos pertencientes al Big Six, generan menos ocasiones de gol por posesión pero cuando generan una ocasión de gol ésta tiene mayor probabilidad de que resulte en gol, ya que laas gráficas están un poco más sesgadas a la derecha.
+
+En resumen, esto es algo que tal vez pudimos haber intuido desde el principio, los equipos más "poderosos" o más "grandes" de Inglaterra (Big Six) son los que generan ocasiones más peligrosas de gol pero lo hacen en menor ocasión, ¿será porque se esperan al mejor momento para atacar?, ¿o el partido no les permite generar muchas ocasiones?, ¿o el rival los aguanta demasiado bien para que no puedan generar ocasiones de gol más seguido?, ¿o el VAR hace que los equipos sean más cautelosos? Estas son algunas preguntas que trataremos de responder en la siguiente parte.
+
+Hasta este punto, lo que hemos logrado intuir a partir de este primer análisis exploratorio acerca de los equipos pertenecientes al Big Six es lo siguiente:
+
+1. El VAR siempre se hizo presente en los partidos que involucraban a equipos pertenecientes al Big Six.
+2. Los equipos del Big Six tienden a anotar más goles por partido que aquellos que no pertenecen al Big Six, pero ambos lo hacen en menos ocasiones ahora con el VAR.
+3. Los equipos del Big Six crean oportunidades más claras de gol que aquellas oportunidades que crean los equipos fuera del Big Six
+4. Las posesiones de balón de los equipos pertenecientes al Big Six tenían mayor probabilidad de gol que aquellas posesiones de los equipos no pertenecientes al Big Six.
+5. De manera muy general, la frecuencia de goles y oportunidades de gol creadas por los equipos de la PL disminuyeron con la llegada del VAR.
 
 #### 1.2 Temporada 19/20 vs 20/21
 
@@ -280,7 +370,63 @@ Ahora revisaremos los mismos datos para la temporada 20/21. Dentro de la tempora
 1. Tomando en cuenta el número total de partidos jugados en la temporada 20/21 (**`r partidos_2021`**), el VAR se hizo protagonista en un **`r tasa_partidos_2021`\%**, es decir, el VAR se hizo presente en prácticamente 5 de cada 10 partidos, o, dicho de otra forma, cada 2 partidos existía la intervención del VAR durante la temporada 20/21.
 2. Contando solamente los partidos en donde se hizo presente almenos una vez el VAR, se tiene un estimado de **`r tasa_int_var_2021`** intervenciones del VAR por partido, aquí podemos decir que el VAR, en promedio, se hizo presente solamente una vez por partido en la temporada 20/21.
 
+Hasta este momento, con estas primeras cifras a manera de comparación entre ambas temporadas, podemos decir que en reaidad no hubo mucho cambio entre ellos y que el VAR se comportó de manera muy similar en ambas temporadas. Pero al ser estas apenas las primeras cifras, no podemos tener una postura firme y concreta acerca de esto, para ello, analizaremos un poco más a fondo estas dos temporadas. 
 
+Ahora, con el fin de analizar más de fondo estas primera dos temporadas con VAR en la PL, se tomarán en cuenta las métricas relacionadas a las intervenciones del VAR dentro de los partidos de la PL. La descripción a detalle de estas variables se encuentran dentro del archivo README.md
+
+Por ahora, como queremos específicamente medir el impacto del VAR entre ambas temporadas de manera general, las métricas que utilizaremos aquí serán la suma de todas las métricas individuales por equipo, es decir, las métricas que se tienen en forma individual por equipo se sumaran para poder tener una métrica "total" o "general" de la temporada en cuestión.
+
+A continuación, se muestran éstas métricas dentro de una gráfica de tipo radar.
+
+```{r,include=FALSE}
+#Creamos la tabla a graficar con la suma de las métricas para cada temporada
+totales_ovrt <- pl_ot %>% group_by(season) %>% summarise(ns = sum(ns), df = sum(df), da = sum(da), ovrt = sum(ovrt), lgf = sum(lgf), dgf = sum(dgf), lga = sum(lga), dga = sum(dga), ngs = sum(ngs), sdf = sum(sdf), sda = sum(sda), nsc = sum(nsc)) %>% select(2:13)
+
+#Calculamos los maximos y minimos de todo el data set para agregarlos a la gráfica (es necesario)
+#junto con el número de variables numéricas
+totales_max <- totales_ovrt %>% max()
+totales_min <- totales_ovrt %>% min()
+totales_num_vars <- dim(totales_ovrt)[2]
+
+#Agregamos los maximos y minimos al data set
+totales_ovrt <- rbind(rep(totales_max,totales_num_vars) ,rep(totales_min,totales_num_vars) , totales_ovrt)
+
+#Vector de paletas de colores
+areas <- c(rgb(1, 0, 0, 0.25),
+           rgb(0, 1, 0, 0.25))
+```
+
+```{r}
+#Creamos la gráfica con las leyendas
+radarchart(totales_ovrt,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Métricas sobre la intervención del VAR en partidos de la PL (Totales)")
+legend('topright',legend = c('19/20','20/21'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Temporada')
+```
+
+Después de obtebner la gráfica de radar, podemos observar que en general
+
+#### 1.3 El antes vs el después del VAR
+
+Como nuestro tema de interés en este análisis es el VAR como nueva herramienta en el fútbol entonces nos enfocaremos en visualizaciones y métricas basadas en el VAR o, la comparación de métricas en situaciones de VAR o situaciones de no VAR
+
+Esta primer gráfica que se muestra aquí representa la cantidad de partidos en que 
+
+Podemos ver que el numero de decisiones del VAR hay más para los big six que aquellos que no son big six 
+
+```{r}
+ggplot(pl_matches,aes(x=prob1)) + geom_density(kernel = 'cosine',color='orange',bw=0.04,fill='green') + facet_grid(big_six_h ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1' = "With VAR"),big_six_h = c('0' = 'No Big Six', '1' = 'Big Six'))) + labs(title = "Histograma de goles anotados en partidos de la PL", y = "Cantidad de goles anotados", x = "Número de Goles anotados") + geom_vline(data = table_median_nsxg1,aes(xintercept=median_val),color="red", linetype="dashed", size=1)
+```
+
+```{r}
+plot(density(pl_matches$prob1,kernel = "gaussian"), xlim = c(0,1), ylim = c(0,5))
+lines(density(pl_matches$prob1[pl_matches$big_six == 0],kernel = "triangular"), col = "red")
+lines(density(pl_matches$prob1[pl_matches$big_six == 1],kernel = "rectangular"), col = "blue")
+lines(density(pl_matches$prob1[pl_matches$is_VAR == 0],kernel = "epanechnikov"), col = "orange")
+lines(density(pl_matches$prob1[pl_matches$is_VAR == 1],kernel = "biweight"), col = "green")
+```
+
+```{r}
+ggplot(pl_var_inc1,aes(x=big_six)) + geom_bar() + labs(title = "Número de intervenciones del VAR en equipos del Big Six vs otros equipos", y = "Número de partidos", x = "Tipo de equipo") + theme(panel.background = element_rect(fill = "white", colour = "gray"), plot.title.position = "panel") #+ facet_wrap(facets=~is_VAR)
+```
 
 ```{r, include=FALSE}
 q <- pl_matches %>% filter(season %in% c(2019,2020)) %>% ggplot(.,aes(x=spi1,y=prob1)) + geom_jitter(aes(colour=factor(is_VAR)))
@@ -289,26 +435,19 @@ facet_grid(after_covid ~ is_VAR, labeller=labeller(is_VAR = c('0' = "No VAR", '1
 ```
 
 ```{r}
-
-```
-
-```{r}
 print(q)
 print(p)
 ```
 
-#### 1.3 El antes vs el después del VAR
-
-Como nuestro tema de interés en este análisis es el VAR como nueva herramienta en el fútbol entonces nos enfocaremos en visualizaciones y métricas basadas en el VAR o, la comparación de métricas en situaciones de VAR o situaciones de no VAR
-
-```{r}
-ggplot(pl_var_inc1,aes(x=big_six)) + geom_bar() + labs(title = "Número de intervenciones del VAR en equipos del Big Six vs otros equipos", y = "Número de partidos", x = "Tipo de equipo") + theme(panel.background = element_rect(fill = "white", colour = "gray"), plot.title.position = "panel") #+ facet_wrap(facets=~is_VAR)
-```
-
-Esta primer gráfica que se muestra aquí representa la cantidad de partidos en que 
 
 
-Podemos ver que el numero de decisiones del VAR hay más para los big six que aquellos que no son big six 
+
+
+
+
+
+
+
 
 
 
