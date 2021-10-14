@@ -1,0 +1,241 @@
+---
+title: "El VAR en la EPL"
+author: "Pedro Alan Velázquez Romero"
+date: "10/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+#librerias a utilizar 
+
+#install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
+ #               "urltools","fmsb","devtools","vcd","aplpack","GGally"))
+#devtools::install_github("ricardo-bion/ggradar", dependencies=TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(httr)
+library(XML)
+library(rvest)
+library(xml2)
+library(tidyverse)
+library(robotstxt)
+library(urltools)
+library(XML)
+library(methods)
+library(ggradar)
+library(scales)
+library(tibble)
+library(fmsb)
+library(vcd)
+library(GGally)
+library(aplpack)
+```
+
+```{r,include=FALSE}
+#Datos a utilizar 
+
+work_computer = F
+
+if(work_computer){
+  pl_matches <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+  pl_ot <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+  pl_var_inc <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+  pl_var_inc1 <- read.csv('/Users/pedro.velazquez/Library/Mobile Documents/com~apple~CloudDocs/Documents/Git_repos/VAR_soccer/tables/var_details1.csv')
+} else {
+  pl_matches <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/premier_league.csv')
+  pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
+  pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
+  pl_var_inc1 <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details1.csv') 
+}
+```
+
+```{r,include=FALSE}
+#Muchas variables estan como factores, debemos covertirlos en el tipo de variable correcto
+pl_matches$date <- as.POSIXct(pl_matches$date)
+pl_matches$league <- as.character(pl_matches$league)
+pl_matches$team1 <- as.character(pl_matches$team1)
+pl_matches$team2 <- as.character(pl_matches$team2)
+pl_ot$season <- as.character(pl_ot$season)
+pl_ot$team <- as.character(pl_ot$team)
+pl_var_inc$season <- as.character(pl_var_inc$season)
+pl_var_inc$team1 <- as.character(pl_var_inc$team1)
+pl_var_inc$team2 <- as.character(pl_var_inc$team2)
+pl_var_inc$home.away <- as.character(pl_var_inc$home.away)
+pl_var_inc$date <- as.character.Date(pl_var_inc$date)
+pl_var_inc$incident <- as.character(pl_var_inc$incident)
+pl_var_inc$type <- as.character(pl_var_inc$type)
+pl_var_inc1$season <- as.character(pl_var_inc1$season)
+pl_var_inc1$team1 <- as.character(pl_var_inc1$team1)
+pl_var_inc1$team2 <- as.character(pl_var_inc1$team2)
+pl_var_inc1$date <- as.character.Date(pl_var_inc1$date)
+pl_var_inc1$incident <- as.character(pl_var_inc1$incident)
+pl_var_inc1$type <- as.character(pl_var_inc1$type)
+```
+
+```{r,include=FALSE}
+
+bs_teams <- c('Chelsea','Liverpool','Manchester City','Manchester United','Arsenal','Tottenham Hotspur')
+
+pl_var_inc$team1 <- if_else(pl_var_inc$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team1)
+pl_var_inc$team2 <- if_else(pl_var_inc$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team2)
+pl_var_inc1$team1 <- if_else(pl_var_inc1$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team1)
+pl_var_inc1$team2 <- if_else(pl_var_inc1$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team2)
+
+pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
+                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
+                                   pl_matches$team1 == 'Manchester City' | 
+                                   pl_matches$team1 == 'Tottenham Hotspur' |
+                                   pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
+                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
+                                   pl_matches$team2 == 'Manchester City' | 
+                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six'] <- if_else(pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur' |
+                                   pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc1['big_six'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
+                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
+                                   pl_var_inc1$team1 == 'Manchester City' | 
+                                   pl_var_inc1$team1 == 'Tottenham Hotspur' |
+                                   pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
+                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
+                                   pl_var_inc1$team2 == 'Manchester City' | 
+                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
+
+pl_matches['big_six_h'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
+                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
+                                   pl_matches$team1 == 'Manchester City' | 
+                                   pl_matches$team1 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six_h'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H') |
+                                  ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A'),1,0)
+
+pl_var_inc1['big_six_h'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
+                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
+                                   pl_var_inc1$team1 == 'Manchester City' | 
+                                   pl_var_inc1$team1 == 'Tottenham Hotspur',1,0)
+
+pl_matches['big_six_a'] <- if_else(pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
+                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
+                                   pl_matches$team2 == 'Manchester City' | 
+                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
+
+pl_var_inc['big_six_a'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
+                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
+                                   pl_var_inc$team1 == 'Manchester City' | 
+                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A') |
+                                   ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
+                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
+                                   pl_var_inc$team2 == 'Manchester City' | 
+                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H'),1,0)
+
+pl_var_inc1['big_six_a'] <- if_else(pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
+                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
+                                   pl_var_inc1$team2 == 'Manchester City' | 
+                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
+
+pl_ot['big_six'] <- if_else(pl_ot$team == 'Chelsea' | pl_ot$team == 'Liverpool' | pl_ot$team == 'Manchester United'| 
+                                   pl_ot$team == 'Arsenal'| pl_ot$team == 'Manchester City' | 
+                                   pl_ot$team == 'Tottenham Hotspur',1,0)
+
+pl_matches['season2'] <- case_when(
+  pl_matches$season == 2016 ~ '16/17',
+  pl_matches$season == 2017 ~ '17/18',
+  pl_matches$season == 2018 ~ '18/19',
+  pl_matches$season == 2019 ~ '19/20',
+  pl_matches$season == 2020 ~ '20/21'
+)
+
+```
+
+# Introducción
+
+El fútbol es un deporte que ha ido cambiando con el paso de los años, en parte por a revolución tecnológica que se vive día a día, y por lo tanto nosotros como aficionados a este bello deporte debemos también adaptarnos a estos cambios constantes y aprender a disfrutarlos en su esencia más pura. Desde cambios a reglas del juego en cancha, hasta implementaciones tecnológicas, el fútbol siempre está en constante movimiento; uno de los cambios más recientes que vivió el fútbol fue la implementación de una nueva herramienta tecnológica quye ayudaría a las decisiones arbitrales dentro de cada partido: el **Árbitro Asistente de Video** (**VAR** por sus siglas en inglés), el cual fue implementado oficialmente en el año 2017 en algunas ligas. Esta nueva herramienta consiste básicamente en una sala de asistencia arbitral en donde tres personas (árbitros profesionales de fútbol) tienen acceso a las diferentes tomas de televisión del partido en cuestión con repeticiones con el fin de poder analizar con más detalle las jugadas "polémicas" que pudiesen llegar a suscitarse dentro del partido de fútbol, básicamente es una herramienta que pretende ayudar a corregir los errores humanos que pudiesen llegar a cometer los árbitros de fútbol en cancha. 
+
+De acuerdo a la Federación Internacional de Fútbol Asociación (FIFA por sus siglas en inglés), la máxima organización de fútbol en el mundo, el propósito del VAR no es revisar cada jugada o falta que sucede dentro del partido, éste solo se limita a la revisión de ciertas acciones, tales como las siguientes (FIFA, 2017):
+
+1. Penales
+
+    + Penales no marcados
+  
+    + Penales mal marcados
+  
+    + Falta o fuera de juego previo al penal
+  
+    + Balón fuera del terreno del juego previo a la jugada que derivó en penal
+
+2. Expulsiones
+
+    + Tarjeta roja directa (no revisa casos de segundas amarillas)
+  
+    + Alguna falta no observada por el árbitro en la cancha que amerite roja directa
+  
+    + Expulsiones erróneas a jugadores
+
+3. Goles
+
+    + Fuera de juego previo al gol o en jugada de gol
+  
+    + Que el balón esté dentro del terreno de juego previo al gol
+  
+    + Falta por parte del equipo atacante en la anotación
+  
+    + Revisión para confirmación o anulación de gol
+
+4. Identidad errónea
+
+    + Si se expulsa o amonesta al jugador equivocado
+
+5. Incidentes no vistos
+
+    + Sucesos que sucedan dentro de la cancha y que el árbitro no haya visto
+
+Es importante señalar aquí que la decisión final siempre la tiene el árbitro en cancha, el VAR simplemente sirve como ayuda para segundas revisiones de jugadas, más no funge como árbitro oficial dentro del partido, por lo tanto, siempre se puede recaer en más errores humanos, debido a que los criterios de los árbitros difieren entre ellos, aún cuando el VAR haya intervenido.
+
+La importancia de esta nueva herramienta dentro del fútbol radica en que siempre dentro de un partido se suscitan muchos eventos de los cuales no siempre se tiene la mejor apreciación por parte del árbitro central y, por lo tanto, es fácil que se cometan muchos errores humanos en marcaciones que pueden llegar a afectar el curso e incluso el marcador final de los partidos. Por ello es que surgió el interés de realizar el siguiente estudio sobre la participación del VAR dentro del fútbol a dos años de su implementación a nivel mundial. 
+
+El propósito del siguiente estudio es señalar el tipo de desempeño que ha tenido el VAR dentro del fútbol de manera general, por un lado, y por otro lado también señalar el impacto que ha tenido el VAR en los equipos de fútbol en cuanto a su desempeño se refiere, para ello, se pretende medir algunas variables como goles anotados, oportunidades creadas, entre otras, con el fin de poder discernir si es que el VAR ha sido benéfico o si, al contrario, ha resultado perjudicial para el fútbol en cuanto a resultados y en cuanto a espectáculo se refiere.
+
+# Datos 
+
+Los datos que se utilizaron para realizar la siguiente investigación son solamente sobre la liga profesional de Inglaterra (EPL por sus siglas en inglés), esto debido enteramente a que es la liga de la cual se tienen más datos acerca de las características de sus partidos y sobre el desempeño del VAR en sus dos temporadas de debut (2019/2020 y 2020/2021).
+
+Las características de los datos que se tienen, junto a sus fuentes, para la investigación son las siguientes:
+
+1. Información acerca de las características de cada partido jugado en la EPL desde la temporada 2016/2017 hasta la temporada 2020/2021. Las características de los partidos que se toman en cuenta aquí son los goles anotados, la probabilidad de victoria de cada equipo, los goles esperados, entre otras. Los datos se tomaron de la página [FiveThirtyEight](https://data.fivethirtyeight.com).
+
+2. Información detallada acerca de las intervenciones del VAR, si es que hubo, dentro de cada partido de la EPL de las temporadas 19/20 y 20/21. Los detalles que se tienen aquí son la descripción del incidente en donde intervino el VAR, el minuto en que sucedió el incidente, los equipos involucrados y el tipo de intervención del VAR (a favor o en contra) con respecto al equipo en cuestión. Los datos se tomaron de los artículos en línea [_How VAR decisions affected every Premier League club in 2019-20_](https://www.espn.com/soccer/english-premier-league/story/3929823/how-var-decisions-have-affected-every-premier-league-club) y [_How VAR decisions affected every Premier League club in 2020-21_](https://www.espn.com/soccer/english-premier-league/story/4182135/how-var-decisions-affected-every-premier-league-club-in-2020-21) de la cadena de televisión ESPN.
+
+3. Información acerca de las métricas que miden los tipos de intervención que tuvo el VAR hacia los diferentes equipos de la EPL durante las temporadas 19/20 y 20/21. Las métricas que se toman en cuenta aquí son el número de goles anulados a favor, el número de goles anulados en contra, número total de decisiones a favor, número total de decisiones en contra, entre otras. Los datos se tomaron de los artículos en línea [_How VAR decisions affected every Premier League club in 2019-20_](https://www.espn.com/soccer/english-premier-league/story/3929823/how-var-decisions-have-affected-every-premier-league-club) y [_How VAR decisions affected every Premier League club in 2020-21_](https://www.espn.com/soccer/english-premier-league/story/4182135/how-var-decisions-affected-every-premier-league-club-in-2020-21) de la cadena de televisión ESPN.
+
+Estos datos se guardaron en forma de datasets para su posterior análisis.
+
+# Resultados esperados
+
+
+
+# Descripción del análisis
+
+# Análisis exploratorio
+
+# Referencias
+
+(1) FIFA. (2017). _Video Assistant Referees (VAR)_. FIFA. https://www.fifa.com/technical/football-technology/standards/video-assistant-referee/video-assistant-referees-var
+
