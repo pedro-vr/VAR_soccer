@@ -54,8 +54,7 @@ if(work_computer){
 }
 ```
 
-```{r,include=FALSE}
-#Muchas variables estan como factores, debemos covertirlos en el tipo de variable correcto
+```{r}
 pl_matches$date <- as.POSIXct(pl_matches$date)
 pl_matches$league <- as.character(pl_matches$league)
 pl_matches$team1 <- as.character(pl_matches$team1)
@@ -75,97 +74,15 @@ pl_var_inc1$team2 <- as.character(pl_var_inc1$team2)
 pl_var_inc1$date <- as.character.Date(pl_var_inc1$date)
 pl_var_inc1$incident <- as.character(pl_var_inc1$incident)
 pl_var_inc1$type <- as.character(pl_var_inc1$type)
+pl_var_inc$big_six <- as.factor(pl_var_inc$big_six)
+pl_var_inc$big_six_h <- as.factor(pl_var_inc$big_six_h)
+pl_var_inc$big_six_a <- as.factor(pl_var_inc$big_six_a)
+pl_var_inc$big_six_both <- as.factor(pl_var_inc$big_six_both)
+pl_var_inc$no_big_six_both <- as.factor(pl_var_inc$no_big_six_both)
+pl_var_inc$bs_vs_nbs <- as.factor(pl_var_inc$bs_vs_nbs)
 ```
 
-```{r,include=FALSE}
-
-bs_teams <- c('Chelsea','Liverpool','Manchester City','Manchester United','Arsenal','Tottenham Hotspur')
-
-pl_var_inc$team1 <- if_else(pl_var_inc$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team1)
-pl_var_inc$team2 <- if_else(pl_var_inc$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc$team2)
-pl_var_inc1$team1 <- if_else(pl_var_inc1$team1 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team1)
-pl_var_inc1$team2 <- if_else(pl_var_inc1$team2 == 'Tottenham','Tottenham Hotspur',pl_var_inc1$team2)
-
-pl_matches['big_six'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
-                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
-                                   pl_matches$team1 == 'Manchester City' | 
-                                   pl_matches$team1 == 'Tottenham Hotspur' |
-                                   pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
-                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
-                                   pl_matches$team2 == 'Manchester City' | 
-                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
-
-pl_var_inc['big_six'] <- if_else(pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
-                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
-                                   pl_var_inc$team1 == 'Manchester City' | 
-                                   pl_var_inc$team1 == 'Tottenham Hotspur' |
-                                   pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
-                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
-                                   pl_var_inc$team2 == 'Manchester City' | 
-                                   pl_var_inc$team2 == 'Tottenham Hotspur',1,0)
-
-pl_var_inc1['big_six'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
-                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
-                                   pl_var_inc1$team1 == 'Manchester City' | 
-                                   pl_var_inc1$team1 == 'Tottenham Hotspur' |
-                                   pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
-                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
-                                   pl_var_inc1$team2 == 'Manchester City' | 
-                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
-
-pl_matches['big_six_h'] <- if_else(pl_matches$team1 == 'Chelsea' | pl_matches$team1 == 'Liverpool' |
-                                   pl_matches$team1 == 'Manchester United' | pl_matches$team1 == 'Arsenal'|
-                                   pl_matches$team1 == 'Manchester City' | 
-                                   pl_matches$team1 == 'Tottenham Hotspur',1,0)
-
-pl_var_inc['big_six_h'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
-                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
-                                   pl_var_inc$team1 == 'Manchester City' | 
-                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H') |
-                                  ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
-                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
-                                   pl_var_inc$team2 == 'Manchester City' | 
-                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A'),1,0)
-
-pl_var_inc1['big_six_h'] <- if_else(pl_var_inc1$team1 == 'Chelsea' | pl_var_inc1$team1 == 'Liverpool' |
-                                   pl_var_inc1$team1 == 'Manchester United' | pl_var_inc1$team1 == 'Arsenal'|
-                                   pl_var_inc1$team1 == 'Manchester City' | 
-                                   pl_var_inc1$team1 == 'Tottenham Hotspur',1,0)
-
-pl_matches['big_six_a'] <- if_else(pl_matches$team2 == 'Chelsea' | pl_matches$team2 == 'Liverpool' |
-                                   pl_matches$team2 == 'Manchester United' | pl_matches$team2 == 'Arsenal'|
-                                   pl_matches$team2 == 'Manchester City' | 
-                                   pl_matches$team2 == 'Tottenham Hotspur',1,0)
-
-pl_var_inc['big_six_a'] <- if_else(((pl_var_inc$team1 == 'Chelsea' | pl_var_inc$team1 == 'Liverpool' |
-                                   pl_var_inc$team1 == 'Manchester United' | pl_var_inc$team1 == 'Arsenal'|
-                                   pl_var_inc$team1 == 'Manchester City' | 
-                                   pl_var_inc$team1 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'A') |
-                                   ((pl_var_inc$team2 == 'Chelsea' | pl_var_inc$team2 == 'Liverpool' |
-                                   pl_var_inc$team2 == 'Manchester United' | pl_var_inc$team2 == 'Arsenal'|
-                                   pl_var_inc$team2 == 'Manchester City' | 
-                                   pl_var_inc$team2 == 'Tottenham Hotspur') & pl_var_inc$home.away == 'H'),1,0)
-
-pl_var_inc1['big_six_a'] <- if_else(pl_var_inc1$team2 == 'Chelsea' | pl_var_inc1$team2 == 'Liverpool' |
-                                   pl_var_inc1$team2 == 'Manchester United' | pl_var_inc1$team2 == 'Arsenal'|
-                                   pl_var_inc1$team2 == 'Manchester City' | 
-                                   pl_var_inc1$team2 == 'Tottenham Hotspur',1,0)
-
-pl_ot['big_six'] <- if_else(pl_ot$team == 'Chelsea' | pl_ot$team == 'Liverpool' | pl_ot$team == 'Manchester United'| 
-                                   pl_ot$team == 'Arsenal'| pl_ot$team == 'Manchester City' | 
-                                   pl_ot$team == 'Tottenham Hotspur',1,0)
-
-pl_matches['season2'] <- case_when(
-  pl_matches$season == 2016 ~ '16/17',
-  pl_matches$season == 2017 ~ '17/18',
-  pl_matches$season == 2018 ~ '18/19',
-  pl_matches$season == 2019 ~ '19/20',
-  pl_matches$season == 2020 ~ '20/21'
-)
-
-```
-
-# Introducción
+# 1. Introducción
 
 El fútbol es un deporte que ha ido cambiando con el paso de los años, en parte por a revolución tecnológica que se vive día a día, y por lo tanto nosotros como aficionados a este bello deporte debemos también adaptarnos a estos cambios constantes y aprender a disfrutarlos en su esencia más pura. Desde cambios a reglas del juego en cancha, hasta implementaciones tecnológicas, el fútbol siempre está en constante movimiento; uno de los cambios más recientes que vivió el fútbol fue la implementación de una nueva herramienta tecnológica quye ayudaría a las decisiones arbitrales dentro de cada partido: el **Árbitro Asistente de Video** (**VAR** por sus siglas en inglés), el cual fue implementado oficialmente en el año 2017 en algunas ligas. Esta nueva herramienta consiste básicamente en una sala de asistencia arbitral en donde tres personas (árbitros profesionales de fútbol) tienen acceso a las diferentes tomas de televisión del partido en cuestión con repeticiones con el fin de poder analizar con más detalle las jugadas "polémicas" que pudiesen llegar a suscitarse dentro del partido de fútbol, básicamente es una herramienta que pretende ayudar a corregir los errores humanos que pudiesen llegar a cometer los árbitros de fútbol en cancha. 
 
@@ -213,7 +130,7 @@ La importancia de esta nueva herramienta dentro del fútbol radica en que siempr
 
 El propósito del siguiente estudio es señalar el tipo de desempeño que ha tenido el VAR dentro del fútbol de manera general, por un lado, y por otro lado también señalar el impacto que ha tenido el VAR en los equipos de fútbol en cuanto a su desempeño se refiere, para ello, se pretende medir algunas variables como goles anotados, oportunidades creadas, entre otras, con el fin de poder discernir si es que el VAR ha sido benéfico o si, al contrario, ha resultado perjudicial para el fútbol en cuanto a resultados y en cuanto a espectáculo se refiere.
 
-# Datos 
+# 2. Datos 
 
 Los datos que se utilizaron para realizar la siguiente investigación son solamente sobre la liga profesional de Inglaterra (EPL por sus siglas en inglés), esto debido enteramente a que es la liga de la cual se tienen más datos acerca de las características de sus partidos y sobre el desempeño del VAR en sus dos temporadas de debut (2019/2020 y 2020/2021).
 
@@ -227,15 +144,119 @@ Las características de los datos que se tienen, junto a sus fuentes, para la in
 
 Estos datos se guardaron en forma de datasets para su posterior análisis.
 
-# Resultados esperados
+# 3. Resultados esperados
 
+Esta sección es importante para poder señalar nuestras espectativas para con esta investigación, es importante poder señalar el pensamiento inicial que se tiene paera realizar esta investigación para así poder compararlo con los resultados finales que se obtengan y, solo entonces, poder decir si es que se cumplieron las expectativas iniciales o si, por otro lado, las expectativas no se satisficieron y se obtuvieron otros resultados diferentes (e incluso tal vez más interesantes que los iniciales).
 
+Para esta investigación acerca del desempeño del VAR en el fútbol moderno se tienen algunas expectativas muy claras a raíz del mero funcionamiento y propósito del VAR en el fútbol. En primer lugar, es bien sabido que la intención principal de la implementación del VAR en el fútbol es para poder ayudar a los árbitros centrales en toma de decisiones o, en caso de ser necesario, corregir los posibles errores humanos que pueden llegar a cometer, por ello, la primera expectativa que genera el VAR es que éste haga del fútbol un deporte más "justo" en el sentido de que los marcadores finales en cada partido reflejen exactamente, o al menos lo más parecido, todo lo sucedido dentro del partido (faltas, goles mal anulados, goles que se tengan que anular, etc.). La forma en que se pretende medir la "justicia" dentro del fútbol en esta investigación es con base en los equipos llamados "Big Six", esto debido a que siempre se tiende a pensar que estos equipos llamados los grandes de Inglaterra suelen ser favorecidos por las decisiones arbitrales en más ocasiones que aquellos equipos que no pertenecen al Big Six, por lo tanto, el primer gran resultado que esperaríamos de esta investigación sería que el VAR sancione por igual a equipos pertenecientes y no pertenecientes al Big Six, y que por lo tanto, el número neto de decisiones del VAR para con estos equipos (del Big Six) sea "consistente" con el de los demás equipos de la EPL.
 
-# Descripción del análisis
+Como segundo tema a tratar en esta investigación es el flujo del juego con la presencia del VAR, es decir, qué tanto ha afectado el VAR para el desarrollo del juego con base a número de goles anotados, oportunidades creadas, entre otras métricas que nos ayudan a entender el desempeño de los equipos en cada partido de la EPL. Lo importante aquí es poder medir el desempeño de los equipos en los partidos antes y después del VAR, poder saber si es posible medir un antes y después del VAR (basado en cambios muy notorios en desempeño) o si, por otro lado, el VAR simplemente funge como una herramienta opcional que no "espanta" a los equipos y por lo tanto su desempeño se mantiene a una tasa de cambio constante temporada tras temporada. Por otro lado, sabemos que el VAR es en realidad una herramienta con la cual no se "juega", en el sentido de que los jugadores dentro del campo en realidad no interactúan o no necesitan del VAR para poder llevar a cabo el desarrollo del partido, por lo tanto, el segundo gran resultado que se esperaría obtener de esta investigación es que el desempeño de los equipos de la EPL se mantiene a una tasa de cambio constante aún con la llegada del VAR (sin contar las interrupciones puntuales en que interviene el VAR para decisiones arbitrales), es decir, no hay cambios bruscos entre campañas pre y post VAR.
 
-# Análisis exploratorio
+Estas dos hipótesis planteadas de manera general aquí se retomarán en las secciones siguientes con más detalle justo a sus respectivas justificaciones.
 
-# Referencias
+# 4. Descripción del análisis
+
+Una vez explicado el propósito general de esta investigación, es importante también expicar el camino que se tomará para llevarla a cabo, esto para tener en claro el flujo de la investigación junto a sus posibles limitaciones y no incurrir en desviaciones graves que podrían alejarnos del propósito de esta investigación.
+
+En primer lugar, se realizará un análisis exploratorio de los datos para poder conocerlos a detalle y así saber con qué tipo de datos estamos tratando en esta investigación, aquí es preciso aclarar que cuando se dice el "tipo" de datos, siempre se hace con una connotación estadística, por lo tanto, el tipo de análisis exploratorio que se realizará en la primera parte de la investigación será con la ayuda de herramientas estadísticas que nos permitan describir y, a su vez, entender el tipo de datos que se tiene sobre el fútbol de Inglaterra. Para ser un poco más precisos, en esta primera parte nos apoyaremos de medidas tradicionales en la estadística (media, mediana, cuantiles, etc.), respaldados con algunas gráficas también de índole estadística, según convenga en el desarrollo de la investigación. Una vez que se termine esta primera parte podremos ser capaces de describir a detalle los datos con los que se cuentan y, en consecuencia, podremos también saber qué rumbo debemos seguir para poder respaldar, o refutar, las hipótesis que de aquí salgan.
+
+En segundo lugar, una vez que ya se ha realizado el análisis exploratorio y se tienen claras las primeras hipótesis de trabajo, se realizará ... **_pendiente aquí_**
+
+# 5. Análisis exploratorio
+
+En el punto 3 se plantearon las intenciones y expectativas generales para con esta investigación y con las cuales se pretende, a su vez, iniciar el análisis exploratorio. 
+
+## 5.1 Un fútbol más equitativo
+
+Como primer punto, se analizará la justicia dentro de los partidos del fútbol y cómo es que se espera que el VAR ayude con este tema en específico. Para ello, nos apoyaremos de los datos obtenidos en los artículos en línea de ESPN (puntos 2.2 y 2.3 de la sección de Datos). Como se explico en apartados anteriores, la noción de la justicia dentro del fútbol se tomará en cuenta aquí con base en los equipos llamados "Big Six", los equipos pertenecientes al big Six son los siguientes: Chelsea, Liverpool, Manchester City, Manchester United, Arsenal y Tottenham Hotspur. Por lo tanto, nuestra primer hipótesis es que el VAR trajo igualdad al fútbol y, en consecuencia, los partidos son más "parejos" y con decisiones arbitrales "centradas" para ambos equipos, es decir, no existen decisiones arbitrales cargadas a ciertos equipos (en especial para aquellos que no pertenecen al Big Six).
+
+La primera gráfica que veremos para que nos ayude a validar o contradecir nuestra hipótesis es una gráfica de barras en donde veremos la distribución de las decisiones arbitrales basados en el tipo de equipo al que se le aplicó la sanción (Big Six vs no Big Six). En los datos que logramos recopilar acerca de las decisiones arbitrales con ayuda del VAR logramos identificar cuatro tipos de decisiones arbitrales con respecto a los equipos de la EPL, a saber, los siguientes: against (en contra), for (a favor), neutral y None (ninguno); estas categorías nos describen si la decisión que tomó el arbitro central con ayuda del VAR fue a favor, en contra o neutral con respecto al equipo en cuestión.
+
+Para efectos de nuestro análisis no tomaremos en cuenta los tipos de decisión "neutral" y "none" debido a que ambos no aportan nada para efectos del tema a analizar, para ambos casos, el número de casos va a ser el mismo para ambos tipos de equipo (Big Six y No Big Six), y lo que queremos realmente medir es la diferencia entre ambos tipos de equipo con respecto a las decisiones tomadas con ayuda del VAR. Así mismo, tampoco se tomarán en cuenta aquellos partidos en donde ambos equipos (local y visitante) pertenezcan o no al Big Six, esto debido a que nos interesan solamente aquellos partidos en los cuales se enfrenten equipos del Big Six vs equipos no pertenecientes al Big Six, además de que si contamos casos de partidos de Big Six vs Big Six o No Big Six vs No Big Six solo inflaría los números y no nos permetiría ver en realidad la relación entre ellos.
+
+La primera gráfica que vamos a analizar con respecto a este tema es de barras en donde podremos observar la frecuencia absoluta del tipo de decisión por parte del VAR con respecto a los tipos de equipo en la EPL (Big Six vs No Big Six).
+
+```{r,include=FALSE}
+freq_type_decisions = pl_var_inc %>% filter(bs_vs_nbs == 1 & tolower(type) %in% c('against','for')) %>% count(`tipo decision` = tolower(type), `tipo equipo` = factor(big_six_t1), name = "decisiones")
+
+gg1 <- ggplot() + geom_col(data = freq_type_decisions, aes(x = `tipo decision`, y = decisiones, fill = `tipo equipo`), position = "fill") + ggtitle('Frecuencia de decisiones del VAR por tipo de equipo (en %)') + ylab('% de decisiones tomadas') + xlab('Tipo de decision')
+```
+
+```{r}
+print(gg1) 
+```
+
+Una vez que obtenemos la gráfica de la frecuencia absoluta (medida en \%) podemos ver que  en realidad los porcentajes para ambos tipos de equipos están muy cercanos al 50\%, es decir, ambos tipos de equipo tuvieron prácticamente el mismo número de decisiones (a favor y en contra) por parte del VAR, lo cual, a su vez, nos da una primera impresión de que el VAR si está siendo una herramienta equitativa en el fútbol. Sobre este mismo resultado, aún contando que los porcentajes para ambos tipos de equipo son prácticamente los mismos (\~50\%), podemos observar que los equipos no pertenecientes al Big Six tuvieron un total menor de decisiones en contra por parte del VAR en comparación con los equipos del Big Six, y a su vez, tuvieron un total mayor de decisiones a favor, este último resultado es uno que contradice la hipótesis inicial que insinúa cierto "favoritismo" para con los equipos del Big Six por parte del cuerpo arbitral en los partidos de la EPL.
+
+Guiados en el resultado obtenido recientemente (en donde vimos que los equipos no pertenecientes al Big Six tuvieron más decisiones a favor por parte del VAR que aqullos equipos del Big Six), analizaremos ahora otro aspecto del desempeño del VAR en la EPL: los goles anulados y concedidos a raíz de revisiones del VAR. Este aspecto es muy importante porque, en primer lugar, los goles son la base del fútbol, es con goles que se ganan partidos al final del día y, por lo tanto, que te anulen goles te resulta afectando como equipo que pretende siempre ganar todos los partidos (al menos en primera instancia), en segundo lugar, a pesar de que vimos que el número de decisiones fue relativamente equitativo para equipos del Big Six y equipos fuera del Big Six, estas decisiones pueden ser de varias índoles y por lo tanto puede ser que las decisiones más importantes dentro de un partido (en relación a goles anotados/anulados) hayan sido marcados siempre a favor de equipos del Big Six. Así, lo que se medirá a continuación será el tipo de decisión (basado en descripción) que se tomó en un partido apoyado con el VAR.
+
+```{r,include=FALSE}
+pl_matches_no_var <- pl_matches %>% filter(is_VAR == 0)
+pl_matches_var <- pl_matches %>% filter(is_VAR == 1)
+#Creamos la tabla a graficar con la suma de las métricas para cada partido dependiendo del tipo de equipo
+#totales_matches_no_var <- pl_matches_no_var %>% group_by(big_six) %>% summarise(spi1 = sum(spi1), spi2 = sum(spi2), prob1 = sum(prob1), prob2 = sum(prob2), probtie = sum(probtie), proj_score1 = sum(proj_score1), proj_score2 = sum(proj_score2),score1 = sum(score1), score2 = sum(score2), xg1 = sum(xg1,na.rm = T), xg2 = sum(xg2,na.rm = T), nsxg1 = sum(nsxg1,na.rm = T), nsxg2 = sum(nsxg2,na.rm = T), adj_score1 = sum(adj_score1,na.rm = T), adj_score2 = sum(adj_score2,na.rm = T)) %>% select(7:16)
+
+totales_matches_no_var <- pl_matches_no_var %>% group_by(big_six) %>% summarise(spi1 = mean(spi1), spi2 = mean(spi2), prob1 = mean(prob1), prob2 = mean(prob2), probtie = mean(probtie), proj_score1 = mean(proj_score1), proj_score2 = mean(proj_score2),score1 = mean(score1), score2 = mean(score2), xg1 = mean(xg1,na.rm = T), xg2 = mean(xg2,na.rm = T), nsxg1 = mean(nsxg1,na.rm = T), nsxg2 = mean(nsxg2,na.rm = T), adj_score1 = mean(adj_score1,na.rm = T), adj_score2 = mean(adj_score2,na.rm = T)) %>% select(7:16)
+
+#totales_matches_var <- pl_matches_var %>% group_by(big_six) %>% summarise(spi1 = sum(spi1), spi2 = sum(spi2), prob1 = sum(prob1), prob2 = sum(prob2), probtie = sum(probtie), proj_score1 = sum(proj_score1), proj_score2 = sum(proj_score2),score1 = sum(score1), score2 = sum(score2), xg1 = sum(xg1,na.rm = T), xg2 = sum(xg2,na.rm = T), nsxg1 = sum(nsxg1,na.rm = T), nsxg2 = sum(nsxg2,na.rm = T), adj_score1 = sum(adj_score1,na.rm = T), adj_score2 = sum(adj_score2,na.rm = T)) %>% select(7:16)
+
+totales_matches_var <- pl_matches_var %>% group_by(big_six) %>% summarise(spi1 = mean(spi1), spi2 = mean(spi2), prob1 = mean(prob1), prob2 = mean(prob2), probtie = mean(probtie), proj_score1 = mean(proj_score1), proj_score2 = mean(proj_score2),score1 = mean(score1), score2 = mean(score2), xg1 = mean(xg1,na.rm = T), xg2 = mean(xg2,na.rm = T), nsxg1 = mean(nsxg1,na.rm = T), nsxg2 = mean(nsxg2,na.rm = T), adj_score1 = mean(adj_score1,na.rm = T), adj_score2 = mean(adj_score2,na.rm = T)) %>% select(7:16)
+
+#Calculamos los maximos y minimos de todo el data set para agregarlos a la gráfica (es necesario)
+#junto con el número de variables numéricas
+totales_match_max_no_var <- totales_matches_no_var %>% max()
+totales_match_min_no_var <- totales_matches_no_var %>% min()
+totales_match_num_vars_no_var <- dim(totales_matches_no_var)[2]
+
+totales_match_max_var <- totales_matches_var %>% max()
+totales_match_min_var <- totales_matches_var %>% min()
+totales_match_num_vars_var <- dim(totales_matches_var)[2]
+
+#Agregamos los maximos y minimos al data set
+totales_matches_no_var <- rbind(rep(totales_match_max_no_var,totales_match_num_vars_no_var) ,rep(totales_match_min_no_var,totales_match_num_vars_no_var) , totales_matches_no_var)
+
+totales_matches_var <- rbind(rep(totales_match_max_var,totales_match_num_vars_var) ,rep(totales_match_min_var,totales_match_num_vars_var) , totales_matches_var)
+
+#Vector de paletas de colores
+areas <- c(rgb(1, 0, 0, 0.25),
+           rgb(0, 1, 0, 0.25))
+```
+
+```{r,include=FALSE}
+par(mfrow=c(1,2),cex=0.7)
+#Creamos la gráfica con las leyendas
+radarchart(totales_matches_no_var,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Sin VAR")
+legend('topright',legend = c('Si','No'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Es Big Six')
+par(cex=0.7)
+radarchart(totales_matches_var,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Con VAR")
+legend('topright',legend = c('Si','No'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Es Big Six')
+mtext("Desempeño promedio de los equipos de la PL", side = 3, line = -30, outer = T)
+```
+
+```{r}
+freq_ot <- pl_ot %>% group_by(equipo = big_six) %>% summarise(ns = sum(ns), df = sum(df), da = sum(da),lgf = sum(lgf), dgf = sum(dgf))
+
+freq_ot <- as.data.frame(freq_ot)
+stars(pl_ot[,c(4,5,9)], key.loc = c(1,2),main = "Hola",labels = pl_ot$team,flip.labels = T)
+stars(freq_ot[,3:6], key.loc = c(6,2),main = "Hola",scale = T)
+```
+
+```{r}
+goles <- pl_matches$int_var
+goles <- goles[!is.na(goles)]
+alfa <- 0.5
+eps <- sqrt(1/(2*length(goles))*log(2/alfa))
+plot(sort(goles), ecdf(goles)(sort(goles)), type="S",xlab = "goles",ylab = "ecdf")
+abline(h = 1, lty = 2, col = "gray", lwd = 2)
+#Marcamos los puntos que representan nuestros datos
+rug(sort(goles), ticksize = .02, col = "blue")
+#Ploteamos la cota inferior de la banda de confianza
+lines(sort(goles),ecdf(goles)(sort(goles)) - eps, col = "red", type = "S")
+#Ploteamos la cota superior de la banda de confianza
+lines(sort(goles),ecdf(goles)(sort(goles)) + eps, col = "red", type = "S")
+```
+
+# 6. Referencias
 
 (1) FIFA. (2017). _Video Assistant Referees (VAR)_. FIFA. https://www.fifa.com/technical/football-technology/standards/video-assistant-referee/video-assistant-referees-var
 
