@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #librerias a utilizar 
 
 #install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
- #               "urltools","fmsb","devtools","vcd","aplpack","GGally"))
+ #               "urltools","fmsb","devtools","vcd","aplpack","GGally"),"wesanderson")
 #devtools::install_github("ricardo-bion/ggradar", dependencies=TRUE)
 library(dplyr)
 library(ggplot2)
@@ -34,6 +34,8 @@ library(fmsb)
 library(vcd)
 library(GGally)
 library(aplpack)
+library(e1071)
+library(wesanderson)
 ```
 
 ```{r,include=FALSE}
@@ -54,7 +56,7 @@ if(work_computer){
 }
 ```
 
-```{r}
+```{r,include=FALSE}
 pl_matches$date <- as.POSIXct(pl_matches$date)
 pl_matches$league <- as.character(pl_matches$league)
 pl_matches$team1 <- as.character(pl_matches$team1)
@@ -80,6 +82,11 @@ pl_var_inc$big_six_a <- as.factor(pl_var_inc$big_six_a)
 pl_var_inc$big_six_both <- as.factor(pl_var_inc$big_six_both)
 pl_var_inc$no_big_six_both <- as.factor(pl_var_inc$no_big_six_both)
 pl_var_inc$bs_vs_nbs <- as.factor(pl_var_inc$bs_vs_nbs)
+
+pl_ot['big_six'] <- if_else(pl_ot$team == 'Chelsea' | pl_ot$team == 'Liverpool' | pl_ot$team == 'Manchester United'| 
+                                   pl_ot$team == 'Arsenal'| pl_ot$team == 'Manchester City' | 
+                                   pl_ot$team == 'Tottenham Hotspur','Big Six','No Big Six')
+
 ```
 
 # 1. Introducción
@@ -177,9 +184,9 @@ Para efectos de nuestro análisis no tomaremos en cuenta los tipos de decisión 
 La primera gráfica que vamos a analizar con respecto a este tema es de barras en donde podremos observar la frecuencia absoluta del tipo de decisión por parte del VAR con respecto a los tipos de equipo en la EPL (Big Six vs No Big Six).
 
 ```{r,include=FALSE}
-freq_type_decisions = pl_var_inc %>% filter(bs_vs_nbs == 1 & tolower(type) %in% c('against','for')) %>% count(`tipo decision` = tolower(type), `tipo equipo` = factor(big_six_t1), name = "decisiones")
+freq_type_decisions = pl_var_inc %>% filter(bs_vs_nbs == 1 & tolower(type) %in% c('against','for')) %>% count(`tipo decision` = tolower(type), `tipo equipo` = big_six_t1, name = "decisiones")
 
-gg1 <- ggplot() + geom_col(data = freq_type_decisions, aes(x = `tipo decision`, y = decisiones, fill = `tipo equipo`), position = "fill") + ggtitle('Frecuencia de decisiones del VAR por tipo de equipo (en %)') + ylab('% de decisiones tomadas') + xlab('Tipo de decision')
+gg1 <- ggplot(freq_type_decisions, aes(`tipo decision`,decisiones, fill = factor(`tipo equipo`))) + geom_col(position = "fill") + ggtitle('Frecuencia de decisiones del VAR por tipo de equipo (en %)') + ylab('% de decisiones tomadas') + xlab('Tipo de decision') + scale_fill_manual(values = c("#56B4E9", "#009E73")) + labs(fill = 'Tipo de equipo')
 ```
 
 ```{r}
@@ -188,60 +195,84 @@ print(gg1)
 
 Una vez que obtenemos la gráfica de la frecuencia absoluta (medida en \%) podemos ver que  en realidad los porcentajes para ambos tipos de equipos están muy cercanos al 50\%, es decir, ambos tipos de equipo tuvieron prácticamente el mismo número de decisiones (a favor y en contra) por parte del VAR, lo cual, a su vez, nos da una primera impresión de que el VAR si está siendo una herramienta equitativa en el fútbol. Sobre este mismo resultado, aún contando que los porcentajes para ambos tipos de equipo son prácticamente los mismos (\~50\%), podemos observar que los equipos no pertenecientes al Big Six tuvieron un total menor de decisiones en contra por parte del VAR en comparación con los equipos del Big Six, y a su vez, tuvieron un total mayor de decisiones a favor, este último resultado es uno que contradice la hipótesis inicial que insinúa cierto "favoritismo" para con los equipos del Big Six por parte del cuerpo arbitral en los partidos de la EPL.
 
-Guiados en el resultado obtenido recientemente (en donde vimos que los equipos no pertenecientes al Big Six tuvieron más decisiones a favor por parte del VAR que aqullos equipos del Big Six), analizaremos ahora otro aspecto del desempeño del VAR en la EPL: los goles anulados y concedidos a raíz de revisiones del VAR. Este aspecto es muy importante porque, en primer lugar, los goles son la base del fútbol, es con goles que se ganan partidos al final del día y, por lo tanto, que te anulen goles te resulta afectando como equipo que pretende siempre ganar todos los partidos (al menos en primera instancia), en segundo lugar, a pesar de que vimos que el número de decisiones fue relativamente equitativo para equipos del Big Six y equipos fuera del Big Six, estas decisiones pueden ser de varias índoles y por lo tanto puede ser que las decisiones más importantes dentro de un partido (en relación a goles anotados/anulados) hayan sido marcados siempre a favor de equipos del Big Six. Así, lo que se medirá a continuación será el tipo de decisión (basado en descripción) que se tomó en un partido apoyado con el VAR.
+Guiados en el resultado obtenido recientemente (en donde vimos que los equipos no pertenecientes al Big Six tuvieron más decisiones a favor por parte del VAR que aqullos equipos del Big Six), analizaremos ahora otro aspecto del desempeño del VAR en la EPL: los goles anulados y concedidos a raíz de revisiones del VAR. Este aspecto es muy importante porque, en primer lugar, los goles son la base del fútbol, es con goles que se ganan partidos al final del día y, por lo tanto, que anulen goles a los equipos puede terminar afectándolos en su intención de siempre ganar todos los partidos (al menos en primera instancia), en segundo lugar, a pesar de que vimos que el número de decisiones fue relativamente equitativo para equipos del Big Six y equipos fuera del Big Six, estas decisiones pueden ser de varias índoles y por lo tanto puede ser que las decisiones más importantes dentro de un partido (en relación a goles anotados/anulados) hayan sido marcados siempre a favor de equipos del Big Six. Así, lo que se medirá a continuación será el tipo de decisión que se tomó en un partido apoyado con el VAR.
+
+Para esto, ya se cuenta con una tabla que cuenta el número de decisiones por tipo (goles anulados a favor, goles anulado en contra, etc.) y con ella fácilmente podemos empezar a medir este tipo de decisiones arbitrales que derivaron de la intervención del VAR, sin embargo, es preciso que primero señalemos el tipo de métrica que vamos a utilizar para empezar a medir estas variables (media, mediana, etc.), para ello, analizaremos las variables relacionadas a estas decisiones arbitrales con ciertas estadísiticas que nos ayuden a entenderlas mejor.
+
+Las variables que nos interesan aquí son las siguientes: número de decisiones a favor (df), número de decisiones en contra (da), número de goles anulados a favor (dgf), número de goles anulados en contra (dga) y el índice de marcador neto (ngs). Con estas variables podremos tener una vista mejor de qué tanto afectó (o benefició) el VAR al marcador de los diferentes equipos de la EPL. La primera estadística que analizaremos será el nivel de asimetría (skewness por su traducción en inglés) de los datos, esta estadística nos ayudará a entender si es que nuestros datos están simétricos con respecto a la media y mediana de los mismos y con ello, posteriormente, podremos tomar la decisión de cuál es la mejor estadística (media o mediana) que nos ayude a hacer comparación entre estas variables.
 
 ```{r,include=FALSE}
-pl_matches_no_var <- pl_matches %>% filter(is_VAR == 0)
-pl_matches_var <- pl_matches %>% filter(is_VAR == 1)
-#Creamos la tabla a graficar con la suma de las métricas para cada partido dependiendo del tipo de equipo
-#totales_matches_no_var <- pl_matches_no_var %>% group_by(big_six) %>% summarise(spi1 = sum(spi1), spi2 = sum(spi2), prob1 = sum(prob1), prob2 = sum(prob2), probtie = sum(probtie), proj_score1 = sum(proj_score1), proj_score2 = sum(proj_score2),score1 = sum(score1), score2 = sum(score2), xg1 = sum(xg1,na.rm = T), xg2 = sum(xg2,na.rm = T), nsxg1 = sum(nsxg1,na.rm = T), nsxg2 = sum(nsxg2,na.rm = T), adj_score1 = sum(adj_score1,na.rm = T), adj_score2 = sum(adj_score2,na.rm = T)) %>% select(7:16)
+skw_ot <- pl_ot %>% group_by(equipo = big_six) %>% summarise(df = skewness(df), da = skewness(da), dgf = skewness(dgf), dga = skewness(dga), ngs = skewness(ngs))
 
-totales_matches_no_var <- pl_matches_no_var %>% group_by(big_six) %>% summarise(spi1 = mean(spi1), spi2 = mean(spi2), prob1 = mean(prob1), prob2 = mean(prob2), probtie = mean(probtie), proj_score1 = mean(proj_score1), proj_score2 = mean(proj_score2),score1 = mean(score1), score2 = mean(score2), xg1 = mean(xg1,na.rm = T), xg2 = mean(xg2,na.rm = T), nsxg1 = mean(nsxg1,na.rm = T), nsxg2 = mean(nsxg2,na.rm = T), adj_score1 = mean(adj_score1,na.rm = T), adj_score2 = mean(adj_score2,na.rm = T)) %>% select(7:16)
+variables <- NULL
+equipo <- NULL
+frecuencia <- NULL
+freq1 <- NULL
+for(i in 1:5){
+  variables <- c(variables,rep(names(skw_ot)[i+1],2))
+  equipo <- c(equipo,skw_ot$equipo)
+  frecuencia <- c(frecuencia,skw_ot[,i+1])
+  freq1 <- c(freq1,frecuencia[[i]][1:2])
+}
 
-#totales_matches_var <- pl_matches_var %>% group_by(big_six) %>% summarise(spi1 = sum(spi1), spi2 = sum(spi2), prob1 = sum(prob1), prob2 = sum(prob2), probtie = sum(probtie), proj_score1 = sum(proj_score1), proj_score2 = sum(proj_score2),score1 = sum(score1), score2 = sum(score2), xg1 = sum(xg1,na.rm = T), xg2 = sum(xg2,na.rm = T), nsxg1 = sum(nsxg1,na.rm = T), nsxg2 = sum(nsxg2,na.rm = T), adj_score1 = sum(adj_score1,na.rm = T), adj_score2 = sum(adj_score2,na.rm = T)) %>% select(7:16)
+skw_ot_df <- data.frame(variables = variables, equipo = equipo, frecuencia = freq1)
 
-totales_matches_var <- pl_matches_var %>% group_by(big_six) %>% summarise(spi1 = mean(spi1), spi2 = mean(spi2), prob1 = mean(prob1), prob2 = mean(prob2), probtie = mean(probtie), proj_score1 = mean(proj_score1), proj_score2 = mean(proj_score2),score1 = mean(score1), score2 = mean(score2), xg1 = mean(xg1,na.rm = T), xg2 = mean(xg2,na.rm = T), nsxg1 = mean(nsxg1,na.rm = T), nsxg2 = mean(nsxg2,na.rm = T), adj_score1 = mean(adj_score1,na.rm = T), adj_score2 = mean(adj_score2,na.rm = T)) %>% select(7:16)
+gg2 <- ggplot(skw_ot_df,aes(variables,abs(frecuencia),fill=factor(equipo))) + geom_col(position = 'dodge') + geom_hline(yintercept = 1,linetype="dashed", color = "red") + labs(x = 'Tipo de intervención del VAR', y = 'Sesgo',fill = 'Tipo de equipo',title = 'Nivel de asimetría de los tipos de decisiones del VAR en valor absoluto') + scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+```
+
+```{r}
+print(gg2)
+```
+
+Después de obtener el nivel de asimetría de las variables de estudio, podemos observar que la mayoría de ellas están por debajo de 1 en valor absoluto, la única variable que sobrepasa el valor de 1 en valor absoluto es la que mide los goles anulados en contra de cada equipo no perteneciente al Big Six. Por lo tanto, salvo los goles anulados en contra para los equipos no pertenecientes al Big Six, podemos realizar las comparaciones entre estas variables y empezar a medirlas con respecto a su media, para el caso de los goles anulados en contra, la estadística que se utilizará será la mediana. 
+
+Ya que sabemos con qué estadística vamos a hacer las comparaciones, a saber, la media, entonces estamos listos para poder realizar la siguiente gráfica que nos ayudará a entender mejor los datos acerca de las decisiones tomadas por los árbitros con la ayuda del VAR. La siguiente gráfica que utilizaremos será una de estrella o radar, esta gráfica nos ayudará a relizar comparaciones entre las variables de interés y a la vez poder tener una mejor visión del desempeño de estas variables con respecto al sujeto de estudio (el VAR), este desempeño se realizará, como en todas las gráficas hasta ahora, con base al tipo de equipo de la EPL (Big Six o No Big Six).
+
+```{r,include=FALSE}
+ot_bs <- pl_ot %>% filter(big_six == 'Big Six')
+ot_nbs <- pl_ot %>% filter(big_six == 'No Big Six')
+
+freq_ot_bs <- ot_bs %>% summarise(df = mean(df), da = mean(da), dgf = mean(dgf), dga = mean(dga), ngs = mean(ngs))
+freq_ot_nbs <- ot_nbs %>% summarise(df = mean(df), da = mean(da), dgf = mean(dgf), dga = median(dga), ngs = mean(ngs))
+
+freq_ot <- data.frame(equipo = c('Big Six','No Big Six'), df = c(freq_ot_bs$df,freq_ot_nbs$df),da = c(freq_ot_bs$da,freq_ot_nbs$da), dgf = c(freq_ot_bs$dgf,freq_ot_nbs$dgf), dga = c(freq_ot_bs$dga,freq_ot_nbs$dga), ngs = c(freq_ot_bs$ngs,freq_ot_nbs$ngs))
+
+freq_ot <- freq_ot[,2:6]
 
 #Calculamos los maximos y minimos de todo el data set para agregarlos a la gráfica (es necesario)
 #junto con el número de variables numéricas
-totales_match_max_no_var <- totales_matches_no_var %>% max()
-totales_match_min_no_var <- totales_matches_no_var %>% min()
-totales_match_num_vars_no_var <- dim(totales_matches_no_var)[2]
+freq_ot_max <- freq_ot %>% max()
+freq_ot_min <- freq_ot %>% min()
+freq_ot_num_vars <- dim(freq_ot)[2]
 
-totales_match_max_var <- totales_matches_var %>% max()
-totales_match_min_var <- totales_matches_var %>% min()
-totales_match_num_vars_var <- dim(totales_matches_var)[2]
-
-#Agregamos los maximos y minimos al data set
-totales_matches_no_var <- rbind(rep(totales_match_max_no_var,totales_match_num_vars_no_var) ,rep(totales_match_min_no_var,totales_match_num_vars_no_var) , totales_matches_no_var)
-
-totales_matches_var <- rbind(rep(totales_match_max_var,totales_match_num_vars_var) ,rep(totales_match_min_var,totales_match_num_vars_var) , totales_matches_var)
+freq_ot <- rbind(rep(freq_ot_max,freq_ot_num_vars) ,rep(freq_ot_min,freq_ot_num_vars),freq_ot)
 
 #Vector de paletas de colores
 areas <- c(rgb(1, 0, 0, 0.25),
            rgb(0, 1, 0, 0.25))
 ```
 
+```{r}
+radarchart(freq_ot,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Radar del tipo de intervenciones del VAR")
+legend('topleft',legend = c('Big Six','No Big Six'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Tipo de equipo')
+```
+
+Esta gráfica de radar nos permiter ver cómo es que se comporta el VAR para con los diferentes tipos de equipos dentro de la EPL. En este caso, podemos observar que, en general, el nivel de las variables para los equipos no pertenecientes al Big Six está siempre por debajo del nivel de los equipos pertenecientes al Big Six, es decir, son menores en todo momento. De aquí podemos saltar de manera segura a conclusiones como el hecho de que, en promedio, el VAR le anula menos goles a equipos no pertenecientes al Big Six y, en cambio, el promedio de goles que anulan para beneficio de los equipos no pertenecientes al Big Six está muy cercano al promedio de los equipos del Big Six, esto nos habla de que el VAR es equitativo al menos en este rubro. 
+
+Otra variable interesante que podemos observar aquí es la de los goles netos anotados, recordemos que esta variable mide la cantidad de goles anotados por equipo después de considerar los anulados a favor y en contra de cada equipo, por lo tanto, esta variable nos habla mucho del saldo neto que se llevan los equipos con respecto a su marcador, y por lo tanto nos habla de qué tanto se ayudan o perjudican del VAR para poder ganar partidos. Aquí podemos observar que, si bien el nivel neto de los equipos fuera del Big Six está por debajo del nivel de aquellos equipos del Big Six, éste se encuentra muy cercano al cero, lo cual nos habla que los equipos fuera del Big Six en realidad no quedan con buen saldo de goles después de la intervención del VAR (prácticamente cero) y por lo tanto es comprensible que les resulte más "difícil" poder ganar partidos. Aquí podríamos sospechar de algún tipo de "injusticia" por parte del VAR hacia con los equipos fuera del Big Six, pero, ¿el VAR es el único responsable de este nivel neto tan bajo? En posteriores análisis se tratará de respondewr a esta pregunta. 
+
+En resumen, de esta gráfica pudimos observar que si bien todos los niveles promedio de las variables correspondientes a equipos fuera del Big Six están siempre por debajo de aquellos niveles correspondientes a equipos del Big Six, esto no siempre denota algo positivo, es más, en algunos casos resulta ser muy negativo, por ejemplo, el nivel de ngs. Basándose en los resultados obtenidos en este primer apartado podemos decir que, si bien, los niveles de intervenciones son muy parecidos entre equipos dentro y fuera del Big Six, hay algunos que, aunque la diferencia sea "mínima", el impacto a nivel de marcador dentro de los partidos puede llegar a resultar muy grande y negativo para los diferentes equipos. 
+
+De aquí nos llevamos que el VAR no siempre es una herramienta "justa" hacia con los equipos fuera del Big Six, aunque también es cierto que esta "injusticia" se da a un nivel muy pequeño pero es algo que, en combinación con otras variables dentro del partido, puede llegar a afectar a aquellos equipos. En lo siguiente, se tratará de reforzar esta noción de "injusticia" tratando de señalar algunas otras variables que también entran en juego aquí. 
+
+## 5.2 El VAR como ayudante "silencioso"
+
+Como también se explicó en el punto 3 de esta investigación, una de las hipótesis que también se trata de verificar aquí es la de que el VAR se trata de una herramienta o ayudante "silencioso" en el fútbol, en el sentido de que éste solamente interviene en ocasiones realmente necesarias para el partido y que, además, no provoca que los equipos cambien drásticamente su forma de juego por estarse cuidando todo el tiempo de aquel ojo "silencioso" del VAR que se encuentra presente en todos los ángulos de la cancha de fútbol. 
+
+Por lo tanto, 
+
+
 ```{r,include=FALSE}
-par(mfrow=c(1,2),cex=0.7)
-#Creamos la gráfica con las leyendas
-radarchart(totales_matches_no_var,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Sin VAR")
-legend('topright',legend = c('Si','No'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Es Big Six')
-par(cex=0.7)
-radarchart(totales_matches_var,cglty = 1,cglcol = 'gray',pcol = 2:3,plwd = 2,plty = 1,pfcol = areas,title = "Con VAR")
-legend('topright',legend = c('Si','No'),bty = "n", pch = 20, col = areas,text.col = "grey25", pt.cex = 2,title = 'Es Big Six')
-mtext("Desempeño promedio de los equipos de la PL", side = 3, line = -30, outer = T)
-```
-
-```{r}
-freq_ot <- pl_ot %>% group_by(equipo = big_six) %>% summarise(ns = sum(ns), df = sum(df), da = sum(da),lgf = sum(lgf), dgf = sum(dgf))
-
-freq_ot <- as.data.frame(freq_ot)
-stars(pl_ot[,c(4,5,9)], key.loc = c(1,2),main = "Hola",labels = pl_ot$team,flip.labels = T)
-stars(freq_ot[,3:6], key.loc = c(6,2),main = "Hola",scale = T)
-```
-
-```{r}
 goles <- pl_matches$int_var
 goles <- goles[!is.na(goles)]
 alfa <- 0.5
