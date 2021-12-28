@@ -13,8 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 #librerias a utilizar 
 
 #install.packages(c("dplyr","ggplot2","tidyr","httr","XML","rvest","xml2","tidyverse","robotstxt",
- #               "urltools","fmsb","devtools","vcd","aplpack","GGally"),"wesanderson")
+#                "urltools","fmsb","devtools","vcd","aplpack","GGally"))
 #devtools::install_github("ricardo-bion/ggradar", dependencies=TRUE)
+#install.packages(c("wesanderson","e1071"))
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -36,6 +37,7 @@ library(GGally)
 library(aplpack)
 library(e1071)
 library(wesanderson)
+library(gridExtra)
 ```
 
 ```{r,include=FALSE}
@@ -53,6 +55,33 @@ if(work_computer){
   pl_ot <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/pl_overturns_var.csv')
   pl_var_inc <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details.csv') #incluye el flag de si el team1 es local o visitante en el partido en cuestión
   pl_var_inc1 <- read.csv('/Users/pedrovela/Documents/Git_repos/VAR_soccer/tables/var_details1.csv') 
+}
+```
+
+```{r,include=FALSE}
+#Declaramos funciones a utilizar
+
+#función para saber si un equipo pertenece al big six
+is_big_six <- function(teams){
+  bs_teams <- c('Chelsea','Liverpool','Manchester United','Arsenal','Manchester City','Tottenham Hotspur')
+  bs <- NULL
+  for (equipo in teams) {
+    if(equipo %in% bs_teams)
+      bs <- c(bs,'Big Six')
+    else
+      bs <- c(bs,'No Big Six')
+  }
+  return(bs)
+}
+
+#Función para poder incluir texto en color
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
 }
 ```
 
@@ -82,11 +111,9 @@ pl_var_inc$big_six_a <- as.factor(pl_var_inc$big_six_a)
 pl_var_inc$big_six_both <- as.factor(pl_var_inc$big_six_both)
 pl_var_inc$no_big_six_both <- as.factor(pl_var_inc$no_big_six_both)
 pl_var_inc$bs_vs_nbs <- as.factor(pl_var_inc$bs_vs_nbs)
+pl_matches$season2 <- as.character(pl_matches$season2)
 
-pl_ot['big_six'] <- if_else(pl_ot$team == 'Chelsea' | pl_ot$team == 'Liverpool' | pl_ot$team == 'Manchester United'| 
-                                   pl_ot$team == 'Arsenal'| pl_ot$team == 'Manchester City' | 
-                                   pl_ot$team == 'Tottenham Hotspur','Big Six','No Big Six')
-
+pl_ot['big_six'] <- is_big_six(pl_ot$team)
 ```
 
 # 1. Introducción
@@ -267,10 +294,113 @@ De aquí nos llevamos que el VAR no siempre es una herramienta "justa" hacia con
 
 ## 5.2 El VAR como ayudante "silencioso"
 
-Como también se explicó en el punto 3 de esta investigación, una de las hipótesis que también se trata de verificar aquí es la de que el VAR se trata de una herramienta o ayudante "silencioso" en el fútbol, en el sentido de que éste solamente interviene en ocasiones realmente necesarias para el partido y que, además, no provoca que los equipos cambien drásticamente su forma de juego por estarse cuidando todo el tiempo de aquel ojo "silencioso" del VAR que se encuentra presente en todos los ángulos de la cancha de fútbol. 
+Como también se explicó en el punto 3 de esta investigación, una de las hipótesis que también se trata de verificar aquí es la de que el VAR se trata de una herramienta o ayudante "silencioso" en el fútbol, en el sentido de que éste solamente interviene en ocasiones realmente necesarias para el partido y que, además, no provoca que los equipos cambien drásticamente su forma de juego por tener que cuidarse todo el tiempo de aquel ojo "silencioso" del VAR que se encuentra presente en todos los ángulos de la cancha de fútbol. 
 
-Por lo tanto, 
+Por lo tanto, las variables que tomaremos en cuenta para este apartado son precisamente aquellas que, por su esencia, nos permiten describir el desempeño de los diferentes equipos de la EPL en cada partido. Algunos ejemplos de estas variables son los siguientes: el número de goles anotados por los equipos en cada partido, el número de goles esperados por cada equipo (xG), el número de goles esperados por posesión de cada equipo (xG), entre otros. La intención en esta parte del análisis es que estas variables nos den un panorama de cómo es que estos equipos se desarrollaron en el campo de juego una vez que el VAR entro en acción en la EPL (versus la época pre-VAR).
 
+Una de las primeras preguntas que nos surge aquí es la de si los equipos siguen anotando el mismo número de goles aún con la presencia del VAR dentro del terreno de juego, es decir, si el número de goles al menos se mantuvo en relación a la epoca del fútbol cuando no existia el VAR. Esta pregunta parece pertinente aquí debido a que, por la existencia del VAR, los equipos pueden registrar un número inferior de goles anotados en comparación a la época pre-VAR; en primer lugar, la razón más obvia por la cual pensaríamos que se anotan menos goles en la era post-VAR es por la anulación de goles, una de las principales misiones del VAR dentro del fútbol es la revisión de cada gol que se anota en el partido para verificar su validez, por lo tanto, sería de alguna manera lógico que se registraran menos goles por partido debido a esta condición; en segundo lugar, podríamos pensar que el número total de goles anotados en un partido puede cambiar debido a los penales marcados con ayuda del VAR, en la época pre-VAR llegaba a suceder que no se marcaran algunos penales a favor de algunos equipos, los cuales, muy probablemente, podrían derivar en gol; en tercer lugar, y esto es una simple hipótesis que se está planteando en esta investigación, el número total de goles por partido podría variar debido a que los equipos pueden llegar a ser más "cautelosos" en el sentido de que no se atreven a hacer algunas jugadas o a no ir tan adelante debido a que el VAR puede detectar ciertas infracciones que el árbitro no logra ver o que juzga de manera errónea y, por lo tanto, los equipos se vuelven más reservadores.
+
+Sobre estos tres puntos que se acaban de mencionar es que se basará el siguiente análisis de datos. En primer lugar, observaremos una gráfica de caja en donde veamos la distribución de los goles con respecto a sus cuartiles.
+
+```{r,include=FALSE}
+pl_matches <-  pl_matches %>% mutate(.,total_goles = pl_matches$score1 + pl_matches$score2)
+
+gg3 <- ggplot(pl_matches,aes(as.factor(is_VAR),total_goles)) + geom_boxplot(fill = "#FFDB6D", color = "#C4961A") + labs(x = '¿VAR en EPL?', y = 'Número de goles',title = 'Número total de goles anotados en cada partido de la EPL antes y \n después del VAR') + scale_x_discrete(breaks = c('0','1'),labels = c('No','Si'))
+```
+
+```{r}
+print(gg3)
+```
+
+Después de obtener la gráfica de caja con respecto a la era pre y pos-VAR, podemos observar que en realidad ambas cajas son prácticamente las mismas, a simple vista, parece no haber diferencia alguna entre ellas; la mediana parece estar al mismo nivel (\~3), el primer y tercer cuartil paracen estar al mismo nivel también (\~2 y \~4 respectivamente) e incluso parecen tener los mismos outliers. Por lo tanto, de esta gráfica no podemos obtener conclusiones importantes y es necesario meternos un poco a las medidas en explícito. A continuación, se mostrarán los valores de las estadísticas más importantes que se toman regularmente para medir variables de interés. 
+
+```{r,include=FALSE}
+pl_matches_no_var <- pl_matches %>% filter(.,is_VAR == 0)
+pl_matches_var <- pl_matches %>% filter(.,is_VAR == 1)
+sum_no_var <- summary(pl_matches_no_var$total_goles)
+sum_var <- summary(pl_matches_var$total_goles)
+skw_no_var <- skewness(pl_matches_no_var$total_goles)
+skw_var <- skewness(pl_matches_var$total_goles)
+iqr_no_var <- sum_no_var[[5]] - sum_no_var[[2]]
+iqr_var <- sum_var[[5]] - sum_var[[2]]
+cv_no_var <- sd(pl_matches_no_var$total_goles)/mean(pl_matches_no_var$total_goles)
+cv_var <- sd(pl_matches_var$total_goles)/mean(pl_matches_var$total_goles)
+
+estadisticas_total_goles <- c(sum_no_var[[1]],sum_no_var[[4]],sum_no_var[[3]],sum_no_var[[6]],skw_no_var,iqr_no_var,cv_no_var,
+                              sum_var[[1]],sum_var[[4]],sum_var[[3]],sum_var[[6]],skw_var,iqr_var,cv_var)
+nombres_est <- list(c('sin_var','con_var'),c('min','media','mediana','max','sesgo','IQR','CV'))
+
+total_goles <- matrix(estadisticas_total_goles,nrow = 2, ncol = length(estadisticas_total_goles)/2,dimnames = nombres_est,byrow = T)
+```
+
+```{r}
+total_goles
+```
+
+En esta matriz podemos obvservar algunas estadísticas que nos ayuda a describir un poco el total de goles anotados por partido cuando está presente el VAR y también cuando éste no existía en el fútbol inglés. En primera instancia podemos observar que el mínimo, la mediana, el máximo y el IQR tienen el mismo valor para ambos tipos de "fútbol" (pre y pos-VAR), por lo tanto, estas estadísticas no nos dicen nada nuevo sobre lo que ya habíamos viato previamente en la gráfica de caja; la primer variable que si cambia entre ambos tipos de fútbol es la media, para el fútbol sin presencia del VAR la media de goles anotados por partido es de `r sum_no_var[[4]]`, mientras que la media para el fútbol ya con VAR es de `r sum_var[[4]]`, aquí ya podemos observar una diferencia que, aunque pequeña (`r sum_no_var[[4]] - sum_var[[4]]`), nos permite ver que en el fútbol sin VAR se anotaban más goles en promedio por partido; la siguiente variable que varia entre un tipo de fútbol y el otro es el sesgo, esta medida que nos permite conocer si es que nuestros datos son simétricos con respecto a la media, para el fútbol sin VAR, el sesgo tiene un valor de `r skw_no_var` y para el fútbol con VAR, el sesgo tiene un valor de `r skw_var`, y aunque aquí podemos observar que el sesgo es mayor para el fútbol con VAR, en realidad ambos valores son menores a uno en valor absoluto, por lo que, al final del día podemos decir que ambos tipos de datos son simétricos y por lo tanto podemos basarnos en sus respectivas medias para posteriores mediciones y/o comparaciones; por último, tenemos el coeficiente de variación (CV), el cual también es difernte para ambos tipos de fútbol, por un lado, el CV del fútbol sin VAR tiene un valor de `r cv_no_var*100`\%. y por otro lado, el CV del fútbol con VAR tiene un valor de `r cv_var * 100 `\%, aquí, a diferencia de las demás variables, el CV del fútbol con VAR es mayor, aunque sea por muy poco (`r (cv_var - cv_no_var)*100`\%), al CV del fútbol sin VAR, de aquí podemos concluir que el número de goles anotados por partido varía mucho más en aquel fútbol donde está presente el VAR y, por lo tanto, no podríamos siempre asegurar un número estimado de goles por partido cuando el VAR se encuentra en acción a que cuando no lo está.
+
+De este último resultado podemos asegurar que, de forma general, el fútbol con la presencia del VAR es más "impredecible", en el sentido de que los goles (y por lo tanto marcadores) varían mucho partido tras partido, y también es, a su vez, un fútbol sin tantas emociones de gol por partido.
+
+Hasta este momento hemos podido observar que, al parecer, a grandes rasgos, el fútbol con VAR no se diferencia mucho al fútbol sin VAR en cuanto a la anotación de goles se refiere, sin embargo, hasta este momento hemos estado analizando solamente los goles efectivos anotados en cada partido, y otra de las métricas más importantes en el fútbol moderno es la esperanza de goles o "Expected Goals (xG)" por su nombre en inglés. Esta métrica nos ayudará entender las oportunidades de gol que cada equipo crea durante el partido, y esto, a su vez, nos dejará tomar un primer vistazo del desempeño de los equipos en los partidos con y sin la presencia del VAR.
+
+A continuación, mostraremos una gráfica de caja para los goles esperados (xG) por temporada y al mismo tiempo también mostraremos una gráfica de los goles efectivos anotados por temporada para poder tener una mejor visión del desempeño de los equipos con respecto a lo que se esperaba de ellos vs lo que realmente pudieron anotar en cada partido. Aquí también se mostrará la división de los equipos por Big Six o no Big Six.
+
+```{r,include=FALSE}
+#Vamos a analizar los xG through the seasons pa ver como va cambiando con la llegada del VAR 
+
+#Reemplazamos los Nas por ceros
+pl_matches$int_var[is.na(pl_matches$int_var)] <- 0
+#Sacamos el total de goles, xg y nsxg por equipo en calidad de local
+performance_teams1 <- pl_matches %>% group_by(season = season2,team = team1) %>% summarise(goles_anotados1 = sum(score1), xg_acumulado1 = sum(xg1), nsxg_acumulado1 = sum(nsxg1))
+#Sacamos el total de goles, xg y nsxg por equipo en calidad de visitante
+performance_teams2 <- pl_matches %>% group_by(season = season2,team = team2) %>% summarise(goles_anotados2 = sum(score2), xg_acumulado2 = sum(xg2), nsxg_acumulado2 = sum(nsxg2))
+#Juntamos los datos de local y visitante
+performance_teams_joint <- as.data.frame(performance_teams1) %>% inner_join(as.data.frame(performance_teams2),by=c("season","team"))
+#Modificamos el df para sumar los goles, xg y nsxg de local y visitante
+performance_teams <- performance_teams_joint %>% mutate(.,goals_scored = goles_anotados1+goles_anotados2, total_xg = xg_acumulado1+xg_acumulado2, total_nsxg = nsxg_acumulado1+nsxg_acumulado2)
+#Nos quedamos solamente con las columnas de los totales
+performance_teams <- performance_teams[c(1:2,9:11)]
+#Unimos la tabla recién hecha con la tabla que contiene los ovrt
+performance_teams <- performance_teams %>% left_join(pl_ot,by=c('season','team'))
+#Aplicamos la función big six a los equipos que no tienen la clasificación (temp < 19/20)
+performance_teams$big_six <- is_big_six(performance_teams$team)
+#Sustituimos los NA por ceros en todo el df
+performance_teams[is.na(performance_teams)] <- 0
+```
+
+```{r,include=FALSE}
+gg4 <- ggplot(performance_teams,aes(x=season,y=total_xg,fill=big_six)) + geom_boxplot() + labs(title = 'xG total por temporada en la EPL', y = 'xG', x = 'Temporada',fill='Big Six') + scale_fill_brewer(palette="Dark2")
+
+gg5 <- ggplot(performance_teams,aes(x=season,y=goals_scored,fill=big_six)) + geom_boxplot() + labs(title = 'Total de goles anotados por partido en cada temporada de la EPL', y = 'Total de goles', x = 'Temporada', fill = 'Big Six') + scale_fill_brewer(palette = 'Dark1')
+```
+
+```{r}
+grid.arrange(gg4,gg5,ncol = 1, nrow = 2,widths = 4, heights = c(4,4))
+```
+
+La primera impresión directa que nos da esta gráfica conjunta es que, para ambos casos (xG y goles efectivos anotados), las cajas de los equipos no pertenecientes al Big Six siempre están por debajo de las cajas de los equipos pertenecientes al Big Six temporada a temporada, esto quiere decir, a su vez, que siempre, en todas las temporadas, los equipos no pertenecientes al Big Six siempre creaban situaciones menos "peligrosas" (o con menos probabilidad) de gol que aquellos equipos pertencientes al Big Six, y derivado de esto, éstos mismos equipos (no pertenencientes al Big Six) anotaron en conjunto menos goles temporada a temporada. Esto puede tomarse como un resultado esperado u "obvio" debido a la historia e incluso "naturaleza propia" de la EPL. 
+
+Ahora, un punto interesante sobre esta gráfica conjunta es que podemos observar la tendencia de los xG y goles anotados temporada a temporada y así poder ver si es que podemos identificar cierta tendencia, ya sea positiva o negativa. En este caso en particular, podemos observar que para los equipos pertenecientes al Big Six, la tendencia de los xG parece ser positiva temporada a temporada, además de que eran xG con valores altos (todos al parecer mayores a .5), esto nos dice, en primera instancia, que el VAR parece no haberles importado a estos equipos para la creación de oportunidades de gol partido a partido, sin embargo, si nos fijamos en la tendencia de los goles efectivos anotados nos damos cuenta de que al parecer ésta es negativa y con ello darnos cuenta de que, a pesar de que generan oprtunidades de gol claras ante la portería, en realidad no son capaces de culminar estas oportunidades al fondo de la red `r colorize("¿Por qué?: Pregunta a responder", "red")`. Por otro lado, si nos fijamos ahora en la tendencia de los xG y los goles efectivos anotados para los equipos fuera del Big Six podemos observar que ambas parecen ser positivas, lo cual nos indica, a su vez, que estos equipos parecen mostrar cierto tipo de mejoría conforme el paso de las temporadas al estar culminando de manera eficaz las oportunidades de gol creadas en los partidos. 
+
+Hasta este momento, con la ayuda de las gráficas que hemos obtenido hasta este momento, podríamos decir que los equipos del Big Six presentaron una desmejora en cuanto a su actuación en los partidos de la EPL conforme el paso de la temporadas, mientras que los equipos fuera del Big Six presentaron una mejoría. Para poder tener una mejor visión de esta hipótesis analizaremos los goles netos anotados por los equipos de la EPL temporada tras temporada, estos goles netos no son más que la diferencia entre los goles efectivos anotados y los xG de cada equipo dentro de la EPL. Como hemos dicho antes, analizaremos esta tendencia de los goles netos temporada tras temporada.
+
+En la siguiente gráfica podremos observar las líneas de tendencia de los goles netos para cada tipo de equipo en la EPL temporada tras temporada (Big Six vs No Big Six), la línea roja horizontal representa un índice de cero goles netos, el cual, a su vez, denotaría que el equipo siempre concreta todas las opciones de gol que éste crea, algo que parece sumamente difícil de lograr. Si el índice para cierta temporada se encuentra por debajo de cero quiere decir que el equipo genera más oportunidades de gol que goles efectivamente concretados, es decir, tiene una sub-actuación, por otro lado, si el índice se encuentra por arriba del cero quiere decir que el equipo concreta más goles por partido que los que genera en cuanto a propbabilidad se refiere, es decir, tiene una sobre-actuación. Lo "políticamente correcto" que se buscaría en este índice sería que todos los equipos tengan un índice de cero, con ellos, podríamos asegurar que los equipos simplemente obtienen lo que "merecen" en cuanto a desempeño dentro de los partidos se refiere, y así evitar tener casos de "suerte" en donde equipos anotan más goles que los que "merece" conforme a su desempeño, o, en caso contrario, la "mala suerte" en que los equipos anotan menos goles de los que "merecen" por su desempeño.
+
+```{r,include=FALSE}
+goles_netos <- performance_teams %>% group_by(season,big_six) %>% summarise(goles_netos = sum(goals_scored) - sum(total_xg))
+goles_netos <- as.data.frame(goles_netos)
+ gg6 <- ggplot(goles_netos, aes(x=season, y=goles_netos, group=big_six)) + geom_line(aes(color=big_six)) + geom_point(aes(color=big_six)) + scale_color_brewer(palette="Accent") + labs(title = 'Goles netos por temporada en la EPL', x = 'Temporada', y = 'Goles Netos', color = 'Big Six') + geom_hline(yintercept=0,color='red')
+```
+
+```{r}
+print(gg6)
+```
+
+Una vez obtenida la gráfica podemos observar los siguientes resultados: Como bien habíamos predicho basados en la gráfica de caja anterior, la tendencia de los goles netos por parte de los equipos pertenecientes al Big Six va decreciendo conforme van pasando las temporadas, lo interesante aquí es que el ìndice cae por debajo del cero a partir de la temporada 19/20 lo cual coincide con la llegada del VAR de manera oficial a la EPL, ¿coincidencia? Por otro lado, la tendencia de los equipos fuera del Big Six, al contrario de lo que habíamos predicho basados en la gráfica anterior, va decreciendo también temporada tras temporada hasta que llegamos a la 19/20 en donde, sorpresivamente, tiene un repunte hasta situarse por arriba del cero, lo cual nos indica de una sobre-actuación por parte de los equipos fuera del Big Six al menos en esa temporada, ya que en la siguiente (20/21) tienen una caída muy fuerte para registrar el índice más bajo desde la 18/19. Por lo tanto, con la parte interesante que nos quedamos de este resultado es que, al parecer, la temporada 19/20 resultó ser de grandes cambios para los equipos de la EPL, por un lado, los equipos del Big Six tuvieron una caída hasta llegar por debajo del cero y, por otro lado, los equipos fuera del Big Six tuvieron un repunte de su actuación hasta llegar a niveles por arriba del cero. Con estom, resulta evidente que la temporada a analizar inmediatamente es la 19/20 para poder entonces entender este "cambio de paradigmas" entre los equipos de la EPL, ¿será que el VAR tuvo algo realmente que ver en esta temporada para poder obtener este comportamiento "atípico"?
+
+### 5.2.1 Temporada 19/20
+
+Los resultados obtenidos anteriormente con respecto al desempeño de los equipos de la EPL dieron paso a la intención de analizar esta temporada de manera específica ya que se sospecha que es aquí, en la primera temporada oficial del VAR dentro de la EPL, en donde los equipos tuvieron una especie de "desajuste" en cuanto a lo acostumbrado basado en temporadas anteriores.
 
 ```{r,include=FALSE}
 goles <- pl_matches$int_var
@@ -290,4 +420,7 @@ lines(sort(goles),ecdf(goles)(sort(goles)) + eps, col = "red", type = "S")
 # 6. Referencias
 
 (1) FIFA. (2017). _Video Assistant Referees (VAR)_. FIFA. https://www.fifa.com/technical/football-technology/standards/video-assistant-referee/video-assistant-referees-var
+
+(2) Yihui Xie, Christophe Dervieux y Emily Riederer. (2021). Font Color, _R Markdown Cookbook_ (1st ed, pp. ). Chapman & Hall/CRC. https://bookdown.org/yihui/rmarkdown-cookbook/
+
 
